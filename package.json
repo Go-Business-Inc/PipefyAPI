@@ -1,13 +1,12 @@
 {
-  "name": "pipefyapi",
-  "version": "1.0.0",
-  "description": "This a TypeScript library provides a convenient way to interact with the Pipefy API (non official), allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.",
+  "name": "pipefy-api",
+  "version": "1.0.4",
+  "description": "This library provides a convenient way to interact with the Pipefy API, allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest",
-    "init": "tsc --init"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
