@@ -1,0 +1,36 @@
+{
+  "name": "pipefyapi",
+  "version": "1.0.0",
+  "description": "This a TypeScript library provides a convenient way to interact with the Pipefy API (non official), allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "init": "tsc --init"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Go-Business-Inc/PipefyAPI.git"
+  },
+  "keywords": [
+    "pipefy",
+    "typescript",
+    "api",
+    "library"
+  ],
+  "author": "Ramón David Sifuentes from Go Business Inc.",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "jest": "^27.0.0",
+    "typescript": "^4.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/Go-Business-Inc/PipefyAPI/issues"
+  },
+  "homepage": "https://github.com/Go-Business-Inc/PipefyAPI#readme"
+}
