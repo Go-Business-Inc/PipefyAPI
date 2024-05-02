@@ -1,4 +1,4 @@
-# PipefyAPI TypeScript Library
+# Pipefy API Library
 
 ## Overview
 

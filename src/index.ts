@@ -1,11 +1,12 @@
-import fetch from 'node-fetch';
+//import fetch from 'node-fetch';
+//import axios from 'axios';
 
 // INSTALL NODE-FECH npm install @types/node-fetch
 // import fetch from 'node-fetch';
 
 // ####################  END CONFIG  ############################
 
-/// <reference path="./pipefy-api-wrapper.d.ts" />
+// / <reference path="./pipefy-api-wrapper.d.ts" />
 
 export interface getCardInfoOptions {
   date_value?: boolean,
@@ -163,7 +164,7 @@ export class PipefyAPI {
     }
   }
   
-  stringClearSpecialChars(text: any){
+  private stringClearSpecialChars(text: any){
     return String(text).replace('"','').replace('"','').replace('[','').replace(']','').replace('!','').replace('(',' ').replace(')',' ')
   }
   
@@ -242,7 +243,7 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation { sendInboxEmail(input: {id: ${emailId} }) { clientMutationId } }`)
   }
   
-  wrapField(fieldName: string,value: any){
+  private wrapField(fieldName: string,value: any){
     if(Array.isArray( value )){
       return `{ field_id: "${fieldName}", field_value: [ "${ value.join('", "') }" ] }`
   
@@ -310,14 +311,7 @@ export class PipefyAPI {
     return resultPipefy.data.createCard.card.id
   }
   
-  
-  /*
-  * Get pipe Info from Pipefy
-  * @arg pipeId id of the pipe 
-  * https://developers.pipefy.com/docs/how-to-upload-attachments-and-attach-to-a-card-record#sample-curl-commands
-  */
-  
-  getFileNameFromURL(url: string): string | null {
+  private getFileNameFromURL(url: string): string | null {
     try {
       const urlObj = new URL(url);
       const pathSegments = urlObj.pathname.split('/');
@@ -339,7 +333,7 @@ export class PipefyAPI {
     return this.pipefyFetch(query)
   }
   
-  extractPathFromURL(url: string): string | null {
+  private extractPathFromURL(url: string): string | null {
     try {
       const urlObj = new URL(url);
       const pathWithoutDomain = urlObj.pathname //+ urlObj.search;
@@ -462,19 +456,6 @@ export class PipefyAPI {
   }
 
 }
-
-
-
-
-/*
-* Look Card from title
-* @arg title of the card 
-* @arg pipeId of the card <<<<<--------------------------------->>>>>
-*/
-
-
-
-
 
 
 
