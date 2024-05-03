@@ -299,8 +299,14 @@ export class PipefyAPI {
     try {
       const urlObj = new URL(url);
       const pathSegments = urlObj.pathname.split('/');
-      const fileName = pathSegments[pathSegments.length - 1];
-      return fileName;
+      const lastSegment = pathSegments[pathSegments.length - 1];
+      const decodedFileName = decodeURIComponent(lastSegment);
+      const fileNameParts = decodedFileName.split('.');
+      // Si necesitas la extensión del archivo
+      //const fileName = fileNameParts[0]; // Nombre del archivo sin extensión
+      //const fileExtension = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : ''; // Extensión del archivo
+  
+      return decodedFileName
     } catch (error) {
       console.error('Error parsing the URL:', error);
       return null;
