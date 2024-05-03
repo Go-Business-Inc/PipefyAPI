@@ -1,19 +1,3 @@
-//import fetch from 'node-fetch';
-//import axios from 'axios';
-
-// INSTALL NODE-FECH npm install @types/node-fetch
-// import fetch from 'node-fetch';
-
-// ####################  END CONFIG  ############################
-
-// / <reference path="./pipefy-api-wrapper.d.ts" />
-
-export interface getCardInfoOptions {
-  date_value?: boolean,
-  datetime_value?: boolean
-}
-
-
 export class PipefyAPI {
   private readonly endpoint: string;
   private readonly organizationId: string;
@@ -458,4 +442,7 @@ export class PipefyAPI {
 }
 
 
-
+export interface getCardInfoOptions {
+  date_value?: boolean,
+  datetime_value?: boolean
+}
