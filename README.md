@@ -22,6 +22,90 @@ To use this library in your TypeScript project, install it via npm:
 npm install pipefy-api
 ```
 
+## Functions of the PipefyAPI Library
+
+### Constructor
+
+- **PipefyAPI(apiKey: string, organizationId: string, timeZone: string, intlCode: string, logTable?: string | null, endpoint?: string)**:
+  Creates an instance of PipefyAPI.
+
+### Methods
+
+- **getCardInfo(cardId: string, children?: boolean, parents?: boolean, options?: getCardInfoOptions): Promise<any>**
+  Retrieves card information from Pipefy.
+
+- **getPipeInfo(pipeId: string): Promise<any>**
+  Retrieves pipe information from Pipefy.
+
+- **moveCardToPhase(cardId: string, phaseId: string): Promise<any>**
+  Moves a card to a specified phase in Pipefy.
+
+- **findCard(cardTitle: string, pipeId: string): Promise<string | null>**
+  Finds a card by its title within a specified pipe in Pipefy.
+
+- **findCardFromTitle(title: string, pipeId: string): Promise<string | null>**
+  Finds a card by its title within a specified pipe in Pipefy.
+
+- **findCardFromField(field: string, value: string, pipeId: string, first?: boolean, cards?: boolean): Promise<any>**
+  Searches for a card by a field value within a specified pipe in Pipefy.
+
+- **makeComment(cardId: string, text: string): Promise<any>**
+  Makes a comment on a specified card in Pipefy.
+
+- **updateFaseField(cardId: string, name: string, value: any, valueIsArray?: boolean): Promise<any>**
+  Updates a field in a specified card phase in Pipefy.
+
+- **clearConnectorField(cardId: string, field: string): Promise<any>**
+  Clears a connector field in a specified card in Pipefy.
+
+- **updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<any>**
+  Updates multiple fields in a specified card in Pipefy.
+
+- **setAssignees(cardId: string, assignees: string[]): Promise<any>**
+  Sets assignees for a specified card in Pipefy.
+
+- **setDueDate(cardId: string, dueDate: string): Promise<any>**
+  Sets the due date for a specified card in Pipefy.
+
+- **findRecordInTable(taleId: string, fieldId: string, value: string, fullData?: boolean): Promise<any>**
+  Finds a record in a specified table based on a field value in Pipefy.
+
+- **createTableRecord(tableId: string, data?: any[]): Promise<any>**
+  Creates a new record in a specified table in Pipefy.
+
+- **deleteTablerecord(recordId: string): Promise<any>**
+  Deletes a record from a specified table in Pipefy.
+
+- **listTableRecords(tableId: string): Promise<any>**
+  Retrieves a list of records from a specified table in Pipefy.
+
+- **logError(message: string, errorCode?: number, functionName?: string): Promise<any>**
+  Logs an error message to a specified log table in Pipefy.
+
+- **clearTable(tableId: string): Promise<any>**
+  Clears all records from a specified table in Pipefy.
+
+- **createEmailTosend(cardId: string, pipeId: string, from: string, fromName: string, to: string, subject: string, html: string): Promise<string | null>**
+  Creates an email to send from a specified card in Pipefy.
+
+- **sendEmail(emailId: string): Promise<any>**
+  Sends an email using the specified email ID returned by the createEmailTosend function.
+
+- **createCard(pipeId: string, dataArray: any, reportError?: boolean): Promise<any>**
+  Creates a new card in a specified pipe in Pipefy.
+
+- **getPreSignedURL(fileName: string): Promise<string | null>**
+  Generates a pre-signed URL for uploading a file to Pipefy.
+
+- **uploadFileFromUrl(sourceUrl: string): Promise<string | null>**
+  Uploads a file from a specified URL to Pipefy.
+
+- **uploadFileFromBuffer(fileName: string, fileData: any): Promise<string | null>**
+  Uploads a file from a buffer to Pipefy.
+
+These functions cover a variety of operations you can perform in Pipefy, including card management, comments, users, due dates, table records, and file handling.
+
+
 ## Usage
 
 ```typescript

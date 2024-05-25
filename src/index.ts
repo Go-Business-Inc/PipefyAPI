@@ -13,8 +13,6 @@ export class PipefyAPI {
     this.logTable = logTable;
     this.timeZone = timeZone;
     this.intlCode = intlCode;
-
-
   }
 
   getCardInfo(cardId: string, children = false, parents = false, options: getCardInfoOptions = {} ) {

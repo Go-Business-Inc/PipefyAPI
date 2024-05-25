@@ -1,6 +1,6 @@
 {
   "name": "pipefy-api",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "This library provides a convenient way to interact with the Pipefy API, allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
