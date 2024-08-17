@@ -91,7 +91,7 @@ export class PipefyAPI {
   updateFaseField(cardId: string, name: string, value: any, valueIsArray = false ){
     let valueTosend = `"${value}"`
     if(valueIsArray || Array.isArray(value) ){
-      valueTosend = `[ "${value.join(", ")}" ]`
+      valueTosend = `[ "${value.join('", "')}" ]`
     }
     const query = `mutation { updateFieldsValues(input: {nodeId: "${cardId}", values: {fieldId: "${name}", value: ${valueTosend} }}) { clientMutationId } }`
     //console.log('QUERY: ',query)
