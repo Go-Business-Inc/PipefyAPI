@@ -243,7 +243,7 @@ export declare class PipefyAPI {
      * @param {boolean} [full=false] - If true, returns an object with all properties.
      * @returns {any} - An indexed object containing field values.
      */
-    indexFields(fields: any[], full:Boolean ): any;
+    indexFields(fields: any[], full?:Boolean ): any;
 
     /**
      * Searches for an card in an array based on the value of an "id" property.
@@ -264,7 +264,7 @@ export declare class PipefyAPI {
      * @returns {string|undefined} - The retrieved value or undefined if not found (unless 'empty' is true).
      *
      */
-    getValueFromField(dataArray: any, indexName: string, empty: boolean, reportValue:boolean):string|undefined;
+    getValueFromField(dataArray: any, indexName: string, empty?: boolean, reportValue?:boolean):string|undefined;
 
     private pipefyFetch;
 }
