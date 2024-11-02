@@ -266,5 +266,35 @@ export declare class PipefyAPI {
      */
     getValueFromField(dataArray: any, indexName: string, empty?: boolean, reportValue?:boolean):string|undefined;
 
+      /**
+     * Returns the cards array from the relation with the specified ID.
+     * 
+     * @param relations - An array of parent or child relation objects.
+     * @param targetId - The ID of the target relation.
+     * @returns An array of cards from the relation with the specified ID, or an empty array if not found.
+     */
+    getCardsByRelationId(relations: CardRelation[], targetId: string): Card[]
+
     private pipefyFetch;
+}
+
+export interface getCardInfoOptions {
+    date_value?: boolean,
+    datetime_value?: boolean
+  }
+  
+  export interface Card {
+    id: string;
+    title: string;
+    fields: [];
+    current_phase?: {
+        id: string,
+        name: string
+    }
+}
+  
+export interface CardRelation {
+    name: string;
+    id: string;
+    cards: Card[];
 }
