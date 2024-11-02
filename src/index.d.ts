@@ -236,5 +236,35 @@ export declare class PipefyAPI {
      */
     uploadFileFromBuffer(fileName: string, fileData: any): Promise<string | null>;
 
+    /**
+     * Indexes all fields from Pipefy as an object indexable by name.
+     *
+     * @param {any[]} fields - Array with fields as received from Pipefy.
+     * @param {boolean} [full=false] - If true, returns an object with all properties.
+     * @returns {any} - An indexed object containing field values.
+     */
+    indexFields(fields: any[], full:Boolean ): any;
+
+    /**
+     * Searches for an card in an array based on the value of an "id" property.
+     *
+     * @param array - The array of cards to search within.
+     * @param targetId - The ID of the object to find.
+     * @returns The object with the specified ID if found, or `null` if it does not exist.
+     */
+    findCardsById(array: any[], targetId: string): any | null;
+
+    /**
+     * Retrieve a value from an array based on the specified index.
+     *
+     * @param {any} dataArray - The array containing the data.
+     * @param {string} indexName - The index to search for in the array.
+     * @param {boolean} [empty=false] - If true, return an empty string when the value doesn't exist; otherwise, return "undefined".
+     * @param {boolean} [reportValue=true] - If true, return the value; if false, return the raw value (default is true).
+     * @returns {string|undefined} - The retrieved value or undefined if not found (unless 'empty' is true).
+     *
+     */
+    getValueFromField(dataArray: any, indexName: string, empty: boolean, reportValue:boolean):string|undefined;
+
     private pipefyFetch;
 }

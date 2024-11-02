@@ -26,17 +26,14 @@ export class PipefyAPI {
     }
     return this.pipefyFetch(`{ card(id: "${cardId}") { id pipe {id name suid} title assignees { id name } createdAt createdBy{ id name email createdAt } ${childenQuery} ${parentsQuery} comments_count current_phase { name id } done due_date fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } labels { id name } phases_history { phase { name  id } firstTimeIn lastTimeOut } url } }`)
   }
-
   
   getPipeInfo(pipeId: string): Promise<any> {
     return this.pipefyFetch(`{ pipe(id: "${pipeId}") { id name } }`)
   }
-
   
   moveCardToPhase(cardId: string, phaseId: string): Promise<any>{
     return this.pipefyFetch(`mutation{ moveCardToPhase(input:{ card_id: ${cardId}, destination_phase_id: ${phaseId} }) { clientMutationId } }`)
   }
-
   
   async findCard(cardTitle: string, pipeId: string) {
     const search: any = await (await this.pipefyFetch(`{ allCards(pipeId: "${pipeId}") { edges { node { id title } } } }`)).json()
@@ -48,7 +45,6 @@ export class PipefyAPI {
     }
     return cardId
   }
-
   
   async findCardFromTitle(title: string, pipeId: string){
     const search: any = await (await this.pipefyFetch(`{ cards(pipe_id: "${pipeId}", search: {title: "${title}"}) { edges { node { id } } } } `)).json()
@@ -180,12 +176,74 @@ export class PipefyAPI {
     return result.data.createTableRecord.table_record.id
   }
   
+  deleteCard(cardId: string){
+    return this.pipefyFetch(`mutation { deleteCard(input: {id: "${cardId}"}) { clientMutationId success } }`)
+  }
+
   deleteTablerecord(recordId: string){
     return this.pipefyFetch(`mutation { deleteTableRecord(input: {id: "${recordId}"}) { clientMutationId success } }`)
   }
   
   listTableRecords(tableId: string){
     return this.pipefyFetch(`{ table_records(table_id: "${tableId}") { edges { node { id } } } }`)
+  }
+
+  /**
+   * Returns the cards array from the relation with the specified ID.
+   * 
+   * @param relations - An array of parent or child relation objects.
+   * @param targetId - The ID of the target relation.
+   * @returns An array of cards from the relation with the specified ID, or an empty array if not found.
+   */
+  getCardsByRelationId(relations: CardRelation[], targetId: string): Card[] {
+    const cardRelation = relations.find(relation => relation.id === targetId);
+    return cardRelation ? cardRelation.cards : [];
+  }
+
+
+  /**
+   * Indexes all fields from Pipefy as an object indexable by name.
+   *
+   * @param {any[]} fields - Array with fields as received from Pipefy.
+   * @param {boolean} [full=false] - If true, returns an object with all properties.
+   * @returns {any} - An indexed object containing field values.
+   */
+  indexFields(fields: any[], full:Boolean = false): any{
+    const indexedFields: any = {};
+    for (const item of fields) {
+        const { indexName, name, value, report_value, ...rest } = item;
+        const type = typeof value === 'number' ? 'number' : 'string';
+        const index = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        if(full){
+            indexedFields[indexName] = { ...item, type };
+        } else {
+            indexedFields[index] = value;
+        }
+    }
+    return indexedFields;
+  }
+
+  findCardsById(array: any[], targetId: string): any | null {
+    for (const item of array) {
+      if (item.id === targetId) {
+        return item.cards;
+      }
+    }
+    return null; // Devolvemos null si no encontramos el objeto con el id buscado
+  }
+
+  getValueFromField(dataArray: any, indexName: string, empty = false, reportValue = true):string|undefined{
+    const result = dataArray.filter((element: any) => element.indexName == indexName)
+    //console.log(result)
+    if(result[0] != undefined){
+        if(reportValue){
+            return result[0].report_value 
+        } else {
+            return result[0].value // report_value
+        }
+    }
+    if(empty) return ''
+    return undefined
   }
   
   async logError(message: string, errorCode = 200, functionName: string = ''){
@@ -328,8 +386,6 @@ export class PipefyAPI {
   
       const path = pathWithoutDomain.substring(1)
   
-      //console.log("PATH A SUBIR A PIPEFY:", path)
-  
       return path; // Remove the leading '/'
     } catch (error) {
       console.error('Error parsing the URL:', error);
@@ -358,8 +414,6 @@ export class PipefyAPI {
   
       // Realiza una solicitud GET para obtener el contenido del archivo remoto
       const response = await fetch(sourceUrl);
-      // const fileFromUrl = await getHttpsFileStream(url)
-      //console.log("RESPONSE:",response.ok)
   
       if (response.ok) {
         // Convierte el contenido a ArrayBuffer
@@ -445,8 +499,23 @@ export class PipefyAPI {
 
 }
 
-
 export interface getCardInfoOptions {
   date_value?: boolean,
   datetime_value?: boolean
+}
+
+export interface Card {
+  id: string;
+  title: string;
+  fields: [];
+  current_phase?: {
+      id: string,
+      name: string
+  }
+}
+
+export interface CardRelation {
+  name: string;
+  id: string;
+  cards: Card[];
 }
