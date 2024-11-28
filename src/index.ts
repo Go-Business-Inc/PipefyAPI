@@ -120,10 +120,10 @@ export class PipefyAPI {
   }
   
   setAssignees(cardId: string, assignees: string[]){
-    return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: [${ assignees.join(', ') }]}) { clientMutationId } }`)
+    return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: ["${ assignees.join('", "') }"]}) { clientMutationId } }`)
   }
   setLabels(cardId: string, labels: string[]){
-    return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: [${ labels.join(', ') }]}) { clientMutationId } }`)
+    return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", label_ids: ["${ labels.join('", "') }"]}) { clientMutationId } }`)
   }
   setDueDate(cardId: string, dueDate: string){
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", due_date: "${dueDate}"}) { clientMutationId } }`)
@@ -158,7 +158,7 @@ export class PipefyAPI {
   
     const query = `
     mutation {
-      createTableRecord(input: {table_id: "${tableId}", fields_attributes: [ ${ fields_attributes.join(', ')}]  }){
+      createTableRecord(input: {table_id: "${tableId}", fields_attributes: [ "${ fields_attributes.join('", "')}" ]  }){
         table_record {
           id
         }
