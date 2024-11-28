@@ -38,6 +38,7 @@ export declare class PipefyAPI {
      * @param {boolean} [parents=false] - Include parent relations.
      * @param {getCardInfoOptions} [options={}] - Additional options for fetching card information.
      *    - If options.date_value or options.datetime_value are true, the corresponding values of the card's field will be included.  
+     *    - If options.second_level is true, the second level relations cards will be included. Will work only if parents or children are true.
      * @returns {Promise<any>} A promise that resolves with the card information.
      */
     getCardInfo(cardId: string, children?: boolean, parents?: boolean, options?: getCardInfoOptions): Promise<any>;
@@ -128,6 +129,14 @@ export declare class PipefyAPI {
      * @returns A promise that resolves when the assignees are successfully set.
      */
     setAssignees(cardId: string, assignees: string[]): Promise<any>;
+
+    /**
+     * Sets labels for a specified card.
+     * @param cardId The ID of the card for which to set labels.
+     * @param labels An array of user IDs representing the labels.
+     * @returns A promise that resolves when the labels are successfully set.
+     */
+    setLabels(cardId: string, labels: string[]): Promise<any>;
 
     /**
      * Sets the due date for a specified card.
@@ -280,7 +289,8 @@ export declare class PipefyAPI {
 
 export interface getCardInfoOptions {
     date_value?: boolean,
-    datetime_value?: boolean
+    datetime_value?: boolean,
+    second_level?: boolean,
   }
   
   export interface Card {

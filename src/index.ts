@@ -18,11 +18,11 @@ export class PipefyAPI {
   getCardInfo(cardId: string, children = false, parents = false, options: getCardInfoOptions = {} ) {
     let childenQuery = `child_relations { name id cards { id title } }`
     if(children){
-      childenQuery = `child_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`
+      childenQuery = `child_relations { name id cards { id title current_phase { id name } ${options.second_level?`child_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`:``} fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`
     }
     let parentsQuery = `parent_relations { name id cards { id title } }`
     if(parents){
-      parentsQuery = `parent_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`
+      parentsQuery = `parent_relations { name id cards { id title current_phase { id name } ${options.second_level?`parent_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`:``}  fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`
     }
     return this.pipefyFetch(`{ card(id: "${cardId}") { id pipe {id name suid} title assignees { id name } createdAt createdBy{ id name email createdAt } ${childenQuery} ${parentsQuery} comments_count current_phase { name id } done due_date fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } labels { id name } phases_history { phase { name  id } firstTimeIn lastTimeOut } url } }`)
   }
@@ -121,6 +121,9 @@ export class PipefyAPI {
   
   setAssignees(cardId: string, assignees: string[]){
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: [${ assignees.join(', ') }]}) { clientMutationId } }`)
+  }
+  setLabels(cardId: string, labels: string[]){
+    return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: [${ labels.join(', ') }]}) { clientMutationId } }`)
   }
   setDueDate(cardId: string, dueDate: string){
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", due_date: "${dueDate}"}) { clientMutationId } }`)
@@ -501,7 +504,8 @@ export class PipefyAPI {
 
 export interface getCardInfoOptions {
   date_value?: boolean,
-  datetime_value?: boolean
+  datetime_value?: boolean,
+  second_level?: boolean,
 }
 
 export interface Card {
