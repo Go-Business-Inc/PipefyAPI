@@ -58,7 +58,7 @@ export class PipefyAPI {
   async findCardFromField(field: string, value: string, pipeId: string, first: Boolean = true, cards = false){
     let cardfields = ''
     if(cards){
-      cardfields = 'fields { indexName name value report_value }'
+      cardfields = 'fields { indexName name value report_value } current_phase { name id }'
     }
     const query = `{ findCards( pipeId: ${pipeId} search: {fieldId: "${field}", fieldValue: "${value}"} ) { edges { node { id ${cardfields} } } } } `
     //console.log(query)
