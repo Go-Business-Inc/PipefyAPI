@@ -131,12 +131,13 @@ export declare class PipefyAPI {
     setAssignees(cardId: string, assignees: string[]): Promise<any>;
 
     /**
-     * Sets labels for a specified card.
-     * @param cardId The ID of the card for which to set labels.
-     * @param labels An array of user IDs representing the labels.
-     * @returns A promise that resolves when the labels are successfully set.
+     * Updates the labels of a card in Pipefy using a GraphQL mutation.
+     * 
+     * @param cardId - The unique identifier of the card to update.
+     * @param labels - An array of label IDs to assign to the card. If `null`, the labels on the card will be cleared.
+     * @returns A Promise resolving to the result of the `pipefyFetch` call.
      */
-    setLabels(cardId: string, labels: string[]): Promise<any>;
+    setLabels(cardId: string, labels: string[] | null): Promise<Response>;
 
     /**
      * Sets the due date for a specified card.

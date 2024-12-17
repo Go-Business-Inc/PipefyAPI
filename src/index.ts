@@ -98,19 +98,20 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation { updateCardField( input: {card_id: ${cardId} , field_id: "${field}", new_value: null} ) { clientMutationId success } }`)
   }
   
-  updateFaseFields(cardId: string, fieldsToUpdate: any){
+  updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<Response>{
     // fieldsToUpdate debe ser un objeto del tipo { field1: value1, field2: value2, ... }
     // por cada objeto se debe buscar el nombre y valor para colocar en el formato
     // {fieldId: "${name}", value: "${value}" },
     let fieldArray: any[] = []
-    let fieldArray2: any[] = []
     for(let field in fieldsToUpdate){
       if(Array.isArray(fieldsToUpdate[field])){
         fieldArray.push(`{fieldId: "${field}", value: [ "${ fieldsToUpdate[field].join('", "') }" ] }`)
       } else {
         if(fieldsToUpdate[field] != null || fieldsToUpdate[field] != undefined){
           fieldArray.push(`{fieldId: "${field}", value: "${fieldsToUpdate[field]}" }`)
-        } else {
+        } else if(fieldsToUpdate[field] == null) {
+          fieldArray.push(`{fieldId: "${field}", value: null }`)
+        } else if(fieldsToUpdate[field] == undefined) {
           //console.log("FIELD SKIPPED:",field)
         }
       }
@@ -119,13 +120,17 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation { updateFieldsValues(input: {nodeId: "${cardId}", values: [ ${fieldValues} ]}) { clientMutationId } }`)
   }
   
-  setAssignees(cardId: string, assignees: string[]){
+  setAssignees(cardId: string, assignees: string[]): Promise<Response>{
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: ["${ assignees.join('", "') }"]}) { clientMutationId } }`)
   }
-  setLabels(cardId: string, labels: string[]){
-    return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", label_ids: ["${ labels.join('", "') }"]}) { clientMutationId } }`)
+  setLabels(cardId: string, labels: string[] | null): Promise<Response>{
+    if(labels == null){
+      return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", label_ids: null }) { clientMutationId } }`);
+    } else {
+      return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", label_ids: ["${labels.join('", "')}"]}) { clientMutationId } }`);
+    }
   }
-  setDueDate(cardId: string, dueDate: string){
+  setDueDate(cardId: string, dueDate: string): Promise<Response>{
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", due_date: "${dueDate}"}) { clientMutationId } }`)
   }
   
@@ -453,7 +458,9 @@ export class PipefyAPI {
     try {
   
       // Look for the upload URL
-      const preSignedUrl: any = await (await this.getPreSignedURL(fileName)).json()
+      const preSignedUrlResponse = await this.getPreSignedURL(fileName)
+      console.log(`preSignedUrlResponse: ${preSignedUrlResponse.status}: ${preSignedUrlResponse.statusText}`)
+      const preSignedUrl: any = await (preSignedUrlResponse).json()
       const uploadURL = preSignedUrl.data.createPresignedUrl.url
       if(!uploadURL){
         console.log('Error getting pre signed URL');
