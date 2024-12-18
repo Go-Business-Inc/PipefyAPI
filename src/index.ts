@@ -522,7 +522,9 @@ export interface Card {
   current_phase?: {
       id: string,
       name: string
-  }
+  },
+  child_relations?: CardRelation[],
+  parent_relations?: CardRelation[],
 }
 
 export interface CardRelation {
