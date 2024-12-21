@@ -1,16 +1,3 @@
-/**
- * Represents options for retrieving card information.
- */
-export interface getCardInfoOptions {
-    /**
-     * Whether to include the date value in the response.
-     */
-    date_value?: boolean;
-    /**
-     * Whether to include the datetime value in the response.
-     */
-    datetime_value?: boolean;
-}
 
 /**
  * Represents a PipefyClient instance.
@@ -32,21 +19,24 @@ export declare class PipefyAPI {
     constructor(apiKey: string, organizationId: string, timeZone: string, intlCode: string, logTable?: string | null, endpoint?: string);
     
     /**
-     * Get card information from Pipefy.
-     * @param {string} cardId - The ID of the card.
-     * @param {boolean} [children=false] - Include child relations.
-     * @param {boolean} [parents=false] - Include parent relations.
-     * @param {getCardInfoOptions} [options={}] - Additional options for fetching card information.
-     *    - If options.date_value or options.datetime_value are true, the corresponding values of the card's field will be included.  
-     *    - If options.second_level is true, the second level relations cards will be included. Will work only if parents or children are true.
-     * @returns {Promise<any>} A promise that resolves with the card information.
+     * Retrieves detailed information about a specific card from the Pipefy API.
+     *
+     * @param cardId - The unique identifier of the card to retrieve information for.
+     * @param children - Whether to include information about child relations of the card. Defaults to false.
+     * @param parents - Whether to include information about parent relations of the card. Defaults to false.
+     * @param options - Additional options to customize the query.
+     * @param options.second_level - Whether to include second-level relations in the query. Defaults to false.
+     * @param options.date_value - Whether to include date values in the fields. Defaults to false.
+     * @param options.datetime_value - Whether to include datetime values in the fields. Defaults to false.
+     * @returns A promise that resolves to the card information retrieved from the Pipefy API.
      */
     getCardInfo(cardId: string, children?: boolean, parents?: boolean, options?: getCardInfoOptions): Promise<any>;
 
     /**
-     * Get pipe Info from Pipefy
-     * @param {string} pipeId - The ID of the pipe 
-     * @returns {Promise<any>} A promise that resolves with the card information.
+     * Retrieves information about a specific pipe from the Pipefy API.
+     *
+     * @param pipeId - The unique identifier of the pipe to retrieve information for.
+     * @returns A promise that resolves to the pipe information, including its id and name.
      */
     getPipeInfo(pipeId: string): Promise<any>;
 
@@ -59,12 +49,25 @@ export declare class PipefyAPI {
     moveCardToPhase(cardId: string, phaseId: string): Promise<any>;
 
     /**
-     * Finds a card by its title within a specified pipe in Pipefy.
-     * @param {string} cardTitle - The title of the card to search for.
-     * @param {string} pipeId - The ID of the pipe in which to search for the card.
-     * @returns {Promise<string | null>} A promise that resolves with the ID of the found card, or null if not found.
+     * Finds a card by its title within a specified pipe.
+     *
+     * @param title - The title of the card to search for.
+     * @param pipeId - The ID of the pipe where the card is located.
+     * @returns A promise that resolves to the ID of the found card, or null if no card is found.
      */
-    findCard(cardTitle: string, pipeId: string): Promise<string | null>;
+    allCardsIds(pipeId: string): Promise<any[] | null>;
+
+    /**
+     * Finds a card from a specific field in a Pipefy pipe.
+     *
+     * @param {string} field - The field to search by.
+     * @param {string} value - The value to search for in the specified field.
+     * @param {string} pipeId - The ID of the pipe to search within.
+     * @param {boolean} [first=true] - Whether to return only the first matching card or all matching cards.
+     * @param {boolean} [cards=false] - Whether to include card fields and current phase information in the result.
+     * @returns {Promise<any>} A promise that resolves to the card(s) found, or null if no cards are found.
+     */
+    findCard(cardTitle: string, pipeId: string): Promise<any>;
 
     /**
      * Finds a card by its title within a specified pipe in Pipefy.
@@ -196,6 +199,23 @@ export declare class PipefyAPI {
     clearTable(tableId: string): Promise<any>;
 
     /**
+     * Deletes a card with the specified ID.
+     *
+     * @param cardId - The ID of the card to be deleted.
+     * @returns A promise that resolves to the response of the delete operation.
+     */
+    deleteCard(cardId: string): Promise<Response>;
+
+    /**
+     * Clears all cards from a specified pipe by deleting them.
+     * 
+     * @param pipeId - The ID of the pipe from which to delete all cards.
+     * @returns A promise that resolves to a string indicating the number of cards deleted and the pipe ID.
+     * 
+     */
+    clearPipe(pipeId: string): Promise<any>;
+
+    /**
      * Creates an email to send from a specified card in Pipefy.
      * @param cardId The ID of the card from which to send the email.
      * @param pipeId The ID of the pipe associated with the card.
@@ -288,13 +308,36 @@ export declare class PipefyAPI {
     private pipefyFetch;
 }
 
+
+/**
+ * Options for retrieving card information.
+ * 
+ * @interface getCardInfoOptions
+ * 
+ * @property {boolean} [date_value] - Whether to include date values in the card information.
+ * @property {boolean} [datetime_value] - Whether to include datetime values in the card information.
+ * @property {boolean} [second_level] - Whether to include second-level information in the card details.
+ */
 export interface getCardInfoOptions {
     date_value?: boolean,
     datetime_value?: boolean,
     second_level?: boolean,
   }
   
-export interface Card {
+  /**
+   * Represents a card in the Pipefy API.
+   * 
+   * @interface Card
+   * @property {string} id - The unique identifier of the card.
+   * @property {string} title - The title of the card.
+   * @property {Array} fields - The fields associated with the card.
+   * @property {Object} [current_phase] - The current phase of the card.
+   * @property {string} current_phase.id - The unique identifier of the current phase.
+   * @property {string} current_phase.name - The name of the current phase.
+   * @property {CardRelation[]} [child_relations] - The child relations of the card.
+   * @property {CardRelation[]} [parent_relations] - The parent relations of the card.
+   */
+  export interface Card {
     id: string;
     title: string;
     fields: [];
@@ -304,10 +347,18 @@ export interface Card {
     },
     child_relations?: CardRelation[],
     parent_relations?: CardRelation[],
-}
+  }
   
-export interface CardRelation {
+  /**
+   * Represents a relation between cards in the system.
+   * 
+   * @interface CardRelation
+   * @property {string} name - The name of the card relation.
+   * @property {string} id - The unique identifier of the card relation.
+   * @property {Card[]} cards - An array of cards associated with this relation.
+   */
+  export interface CardRelation {
     name: string;
     id: string;
     cards: Card[];
-}
+  }

@@ -15,7 +15,7 @@ export class PipefyAPI {
     this.intlCode = intlCode;
   }
 
-  getCardInfo(cardId: string, children = false, parents = false, options: getCardInfoOptions = {} ) {
+  getCardInfo(cardId: string, children = false, parents = false, options: getCardInfoOptions = {} ): Promise<any> {
     let childenQuery = `child_relations { name id cards { id title } }`
     if(children){
       childenQuery = `child_relations { name id cards { id title current_phase { id name } ${options.second_level?`child_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`:``} fields { indexName name value report_value ${options.date_value?"date_value":""} ${options.datetime_value?"datetime_value":""} } } }`
@@ -35,18 +35,16 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation{ moveCardToPhase(input:{ card_id: ${cardId}, destination_phase_id: ${phaseId} }) { clientMutationId } }`)
   }
   
-  async findCard(cardTitle: string, pipeId: string) {
-    const search: any = await (await this.pipefyFetch(`{ allCards(pipeId: "${pipeId}") { edges { node { id title } } } }`)).json()
-    let cardId: string | null = null
-    for(let i = 0; i < search.data.allCards.edges.length; i++){
-      if(search.data.allCards.edges[i].node.title == cardTitle){
-        cardId = search.data.allCards.edges[i].node.id
-      }
+  async allCardsIds(pipeId: string): Promise<any[] | null> {
+    const search: any = await (await this.pipefyFetch(`{ allCards(pipeId: ${pipeId}) { totalCount nodes { id } pageInfo { hasPreviousPage hasNextPage } } } `)).json()
+    if(search.data.allCards.nodes.length >0){
+        return search.data.allCards
+    } else {
+        return null
     }
-    return cardId
   }
-  
-  async findCardFromTitle(title: string, pipeId: string){
+
+  async findCardFromTitle(title: string, pipeId: string): Promise<any | null>{
     const search: any = await (await this.pipefyFetch(`{ cards(pipe_id: "${pipeId}", search: {title: "${title}"}) { edges { node { id } } } } `)).json()
     if(search.data.cards.edges.length >0){
         return search.data.cards.edges[0].node.id
@@ -55,7 +53,7 @@ export class PipefyAPI {
     }
   }
 
-  async findCardFromField(field: string, value: string, pipeId: string, first: Boolean = true, cards = false){
+  async findCardFromField(field: string, value: string, pipeId: string, first: Boolean = true, cards = false): Promise<any>{
     let cardfields = ''
     if(cards){
       cardfields = 'fields { indexName name value report_value } current_phase { name id }'
@@ -80,11 +78,11 @@ export class PipefyAPI {
     }
   }
 
-  makeComment(cardId: string, text: string){
+  makeComment(cardId: string, text: string): Promise<Response>{
     return this.pipefyFetch(`mutation{ createComment(input:{ card_id: "${cardId}", text: "${text.replace(/"/g,"")}" }) { clientMutationId } }`)
   }
 
-  updateFaseField(cardId: string, name: string, value: any, valueIsArray = false ){
+  updateFaseField(cardId: string, name: string, value: any, valueIsArray = false ): Promise<Response>{
     let valueTosend = `"${value}"`
     if(valueIsArray || Array.isArray(value) ){
       valueTosend = `[ "${value.join('", "')}" ]`
@@ -94,7 +92,7 @@ export class PipefyAPI {
     return this.pipefyFetch(query)
   }
   
-  clearConnectorField(cardId: string, field: string){
+  clearConnectorField(cardId: string, field: string): Promise<Response>{
     return this.pipefyFetch(`mutation { updateCardField( input: {card_id: ${cardId} , field_id: "${field}", new_value: null} ) { clientMutationId success } }`)
   }
   
@@ -123,6 +121,7 @@ export class PipefyAPI {
   setAssignees(cardId: string, assignees: string[]): Promise<Response>{
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", assignee_ids: ["${ assignees.join('", "') }"]}) { clientMutationId } }`)
   }
+
   setLabels(cardId: string, labels: string[] | null): Promise<Response>{
     if(labels == null){
       return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", label_ids: null }) { clientMutationId } }`);
@@ -130,11 +129,12 @@ export class PipefyAPI {
       return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", label_ids: ["${labels.join('", "')}"]}) { clientMutationId } }`);
     }
   }
+
   setDueDate(cardId: string, dueDate: string): Promise<Response>{
     return this.pipefyFetch(`mutation { updateCard(input: {id: "${cardId}", due_date: "${dueDate}"}) { clientMutationId } }`)
   }
   
-  async findRecordInTable(taleId: string, fieldId: string, value: string, fullData = false){
+  async findRecordInTable(taleId: string, fieldId: string, value: string, fullData = false): Promise< any | null>{
     let query = `{ findRecords(tableId: "${taleId}", search: {fieldId: "${fieldId}", fieldValue: "${value}"}) { edges { node { id } } } }`
     if(fullData){
       query = `{ findRecords(tableId: "${taleId}", search: {fieldId: "${fieldId}", fieldValue: "${value}"}) { edges { node { id fields { indexName name report_value value } } } } }`
@@ -150,11 +150,18 @@ export class PipefyAPI {
     }
   }
   
-  private stringClearSpecialChars(text: any){
+  /**
+   * Removes specific special characters from a given text.
+   * 
+   * @param text - The input text from which special characters will be removed.
+   * @returns The cleaned text with specified special characters removed.
+   */
+  private stringClearSpecialChars(text: any): string{
     return String(text).replace('"','').replace('"','').replace('[','').replace(']','').replace('!','').replace('(',' ').replace(')',' ')
   }
   
-  async createTableRecord(tableId: string, data: any[] = []){
+
+  async createTableRecord(tableId: string, data: any[] = []): Promise< any | null>{
   
     let fields_attributes: any[] = []
     for(let i=0; i<data.length;i++){
@@ -183,16 +190,24 @@ export class PipefyAPI {
     }
     return result.data.createTableRecord.table_record.id
   }
-  
-  deleteCard(cardId: string){
-    return this.pipefyFetch(`mutation { deleteCard(input: {id: "${cardId}"}) { clientMutationId success } }`)
-  }
 
-  deleteTablerecord(recordId: string){
+  /**
+   * Deletes a table record with the specified record ID.
+   *
+   * @param {string} recordId - The ID of the record to be deleted.
+   * @returns {Promise<Response>} A promise that resolves to the response of the delete operation.
+   */
+  deleteTablerecord(recordId: string): Promise<Response>{
     return this.pipefyFetch(`mutation { deleteTableRecord(input: {id: "${recordId}"}) { clientMutationId success } }`)
   }
   
-  listTableRecords(tableId: string){
+  /**
+   * Retrieves the records of a specified table.
+   *
+   * @param tableId - The unique identifier of the table whose records are to be fetched.
+   * @returns A promise that resolves to the response containing the table records.
+   */
+  listTableRecords(tableId: string): Promise<Response>{
     return this.pipefyFetch(`{ table_records(table_id: "${tableId}") { edges { node { id } } } }`)
   }
 
@@ -240,6 +255,15 @@ export class PipefyAPI {
     return null; // Devolvemos null si no encontramos el objeto con el id buscado
   }
 
+  /**
+   * Retrieves a value from a specified field within a data array.
+   *
+   * @param dataArray - The array of data objects to search through.
+   * @param indexName - The name of the index to match within the data objects.
+   * @param empty - Optional. If true, returns an empty string when no match is found. Defaults to false.
+   * @param reportValue - Optional. If true, returns the 'report_value' of the matched object. If false, returns the 'value'. Defaults to true.
+   * @returns The 'report_value' or 'value' of the matched object, an empty string if `empty` is true and no match is found, or undefined if no match is found and `empty` is false.
+   */
   getValueFromField(dataArray: any, indexName: string, empty = false, reportValue = true):string|undefined{
     const result = dataArray.filter((element: any) => element.indexName == indexName)
     //console.log(result)
@@ -254,7 +278,7 @@ export class PipefyAPI {
     return undefined
   }
   
-  async logError(message: string, errorCode = 200, functionName: string = ''){
+  async logError(message: string, errorCode = 200, functionName: string = ''): Promise<any>{
     if(this.logTable == undefined){
       return null
     }
@@ -262,7 +286,7 @@ export class PipefyAPI {
     return await this.createTableRecord(this.logTable,[ { id: 'error_code', value: errorCode }, { id: 'message', value: message } , { id: 'date', value: now.toLocaleString(this.intlCode,{ timeZone: this.timeZone }) }, { id: 'function', value: functionName } ])
   }
   
-  async clearTable(tableId: string) {
+  async clearTable(tableId: string): Promise<any> {
     let recordCount = 0
     const recodrs: any = await (await this.listTableRecords(tableId)).json()
     if(recodrs.data.table_records.edges != undefined){
@@ -270,15 +294,38 @@ export class PipefyAPI {
       for(let i=0;i<recodrs.data.table_records.edges.length;i++){
         promises.push(this.deleteTablerecord(recodrs.data.table_records.edges[i].node.id))
       }
-      const resutl = await Promise.all(promises)
-      console.log(resutl)
-      return resutl
+      const result = await Promise.all(promises)
     }
     return `Deleted ${recordCount} recodrs in table ${tableId}`
   }
+
+  deleteCard(cardId: string): Promise<Response>{
+    return this.pipefyFetch(`mutation { deleteCard(input: {id: "${cardId}"}) { clientMutationId success } }`)
+  }
+
+
+  async clearPipe(pipeId: string): Promise<string> {
+    let recordCount = 0
+    let finished = false
+    do {
+      const allCards: any = await this.allCardsIds(pipeId)
+      if(allCards != null){
+        let promises: any[] = []
+        for(let i=0;i<allCards.nodes.length;i++){
+          promises.push(this.deleteCard(allCards.nodes[i].id))
+        }
+        const result = await Promise.all(promises)
+        recordCount += result.length
+      } else {
+        finished = true
+      }
+    }
+    while(!finished)
+
+    return `Deleted ${recordCount} cards in pipe ${pipeId}`
+  }
   
-  
-  async createEmailTosend(cardId: String, pipeId: string, from: string, fromName: string, to: string, subject: String, html: String){
+  async createEmailTosend(cardId: String, pipeId: string, from: string, fromName: string, to: string, subject: String, html: String): Promise<any>{
     const createEmailResult: any = await (await this.pipefyFetch(`mutation { createInboxEmail( input: { card_id: ${cardId}, repo_id: ${pipeId}, from: "${from}", fromName: "${fromName}", to: "${to}", subject: "${subject}", html: "${html}" } ) { clientMutationId inbox_email{id} } } `)).json()
     if("errors" in createEmailResult){
       console.log(createEmailResult.errors)
@@ -286,12 +333,21 @@ export class PipefyAPI {
     }
    return createEmailResult.data.createInboxEmail.inbox_email.id
   }
-  
-  async sendEmail(emailId: String){
+
+  async sendEmail(emailId: String): Promise<any>{
     return this.pipefyFetch(`mutation { sendInboxEmail(input: {id: ${emailId} }) { clientMutationId } }`)
   }
   
-  private wrapField(fieldName: string,value: any){
+  /**
+   * Wraps a field name and value into a specific string format.
+   * 
+   * @param fieldName - The name of the field to wrap.
+   * @param value - The value of the field. Can be a single value or an array of values.
+   * @returns A string in the format `{ field_id: "fieldName", field_value: "value" }` or 
+   *          `{ field_id: "fieldName", field_value: [ "value1", "value2", ... ] }` if the value is an array.
+   *          Returns `null` if the value is `null` or `undefined`.
+   */
+  private wrapField(fieldName: string,value: any): string | null{
     if(Array.isArray( value )){
       return `{ field_id: "${fieldName}", field_value: [ "${ value.join('", "') }" ] }`
   
@@ -305,7 +361,7 @@ export class PipefyAPI {
     }
   }
   
-  async createCard(pipeID: string, dataArray: any, reportError = false){  
+  async createCard(pipeID: string, dataArray: any, reportError = false): Promise<any>{  
   
     let dataToWrite: any[] = []
     if(Array.isArray(dataArray)){
@@ -359,6 +415,14 @@ export class PipefyAPI {
     return resultPipefy.data.createCard.card.id
   }
   
+  /**
+   * Extracts the file name from a given URL.
+   *
+   * @param {string} url - The URL from which to extract the file name.
+   * @returns {string | null} The decoded file name if extraction is successful, otherwise null.
+   *
+   * @throws Will log an error to the console if the URL parsing fails.
+   */
   private getFileNameFromURL(url: string): string | null {
     try {
       const urlObj = new URL(url);
@@ -377,7 +441,7 @@ export class PipefyAPI {
     }
   }
   
-  getPreSignedURL(fileName: String){
+  getPreSignedURL(fileName: String): Promise<Response>{
     let query = `mutation {
       createPresignedUrl(input: { organizationId: ${this.organizationId}, fileName: "${fileName}" }){
         clientMutationId
@@ -401,8 +465,7 @@ export class PipefyAPI {
     }
   }
   
-  
-  async uploadFileFromUrl(sourceUrl: string){
+  async uploadFileFromUrl(sourceUrl: string): Promise<string | null>{
     try {
   
       // Search for the name of the file whithin the source URL
@@ -454,7 +517,7 @@ export class PipefyAPI {
     }
   }
   
-  async uploadFileFromBuffer(fileName: string, fileData: any){
+  async uploadFileFromBuffer(fileName: string, fileData: any): Promise<string | null>{
     try {
   
       // Look for the upload URL
@@ -494,7 +557,14 @@ export class PipefyAPI {
 
 
 
-  private pipefyFetch(query: string, method: string = 'POST'){
+  /**
+   * Makes a fetch request to the Pipefy API with the given GraphQL query.
+   *
+   * @param query - The GraphQL query to be sent in the request body.
+   * @param method - The HTTP method to be used for the request (default is 'POST').
+   * @returns A promise that resolves to the response of the fetch request.
+   */
+  private pipefyFetch(query: string, method: string = 'POST'): Promise<Response> {
 
     const options = {
         method: method,
@@ -509,12 +579,34 @@ export class PipefyAPI {
 
 }
 
+/**
+ * Options for retrieving card information.
+ * 
+ * @interface getCardInfoOptions
+ * 
+ * @property {boolean} [date_value] - Whether to include date values in the card information.
+ * @property {boolean} [datetime_value] - Whether to include datetime values in the card information.
+ * @property {boolean} [second_level] - Whether to include second-level information in the card details.
+ */
 export interface getCardInfoOptions {
   date_value?: boolean,
   datetime_value?: boolean,
   second_level?: boolean,
 }
 
+/**
+ * Represents a card in the Pipefy API.
+ * 
+ * @interface Card
+ * @property {string} id - The unique identifier of the card.
+ * @property {string} title - The title of the card.
+ * @property {Array} fields - The fields associated with the card.
+ * @property {Object} [current_phase] - The current phase of the card.
+ * @property {string} current_phase.id - The unique identifier of the current phase.
+ * @property {string} current_phase.name - The name of the current phase.
+ * @property {CardRelation[]} [child_relations] - The child relations of the card.
+ * @property {CardRelation[]} [parent_relations] - The parent relations of the card.
+ */
 export interface Card {
   id: string;
   title: string;
@@ -527,6 +619,14 @@ export interface Card {
   parent_relations?: CardRelation[],
 }
 
+/**
+ * Represents a relation between cards in the system.
+ * 
+ * @interface CardRelation
+ * @property {string} name - The name of the card relation.
+ * @property {string} id - The unique identifier of the card relation.
+ * @property {Card[]} cards - An array of cards associated with this relation.
+ */
 export interface CardRelation {
   name: string;
   id: string;
