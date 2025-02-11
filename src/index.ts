@@ -35,7 +35,7 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation{ moveCardToPhase(input:{ card_id: ${cardId}, destination_phase_id: ${phaseId} }) { clientMutationId } }`)
   }
   
-  async allCardsIds(pipeId: string, parents: boolean = false, children: boolean = false): Promise<any[] | null> {
+  async allCardsIds(pipeId: string, parents: boolean = false, children: boolean = false): Promise<any | null> {
     let childenQuery = ``
     if(children){
       childenQuery = ` child_relations { name id cards { id title } }`

@@ -49,13 +49,14 @@ export declare class PipefyAPI {
     moveCardToPhase(cardId: string, phaseId: string): Promise<any>;
 
     /**
-     * Finds a card by its title within a specified pipe.
+     * Finds all card from specified pipe.
      *
-     * @param title - The title of the card to search for.
      * @param pipeId - The ID of the pipe where the card is located.
-     * @returns A promise that resolves to the ID of the found card, or null if no card is found.
+     * @param children - Whether to include information about child relations of the card. Defaults to false.
+     * @param parents - Whether to include information about parent relations of the card. Defaults to false.
+     * @returns A promise that resolves a list of cards.
      */
-    allCardsIds(pipeId: string): Promise<any[] | null>;
+    allCardsIds(pipeId: string, parents?: boolean, children?: boolean): Promise<any | null>;
 
     /**
      * Finds a card from a specific field in a Pipefy pipe.
