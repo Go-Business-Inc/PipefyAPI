@@ -35,8 +35,16 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation{ moveCardToPhase(input:{ card_id: ${cardId}, destination_phase_id: ${phaseId} }) { clientMutationId } }`)
   }
   
-  async allCardsIds(pipeId: string): Promise<any[] | null> {
-    const search: any = await (await this.pipefyFetch(`{ allCards(pipeId: ${pipeId}) { totalCount nodes { id } pageInfo { hasPreviousPage hasNextPage } } } `)).json()
+  async allCardsIds(pipeId: string, parents: boolean = false, children: boolean = false): Promise<any[] | null> {
+    let childenQuery = ``
+    if(children){
+      childenQuery = ` child_relations { name id cards { id title } }`
+    }
+    let parentsQuery = ``
+    if(parents){
+      parentsQuery = ` parent_relations { name id cards { id title } }`
+    }
+    const search: any = await (await this.pipefyFetch(`{ allCards(pipeId: ${pipeId}) { totalCount nodes { id${parentsQuery}${childenQuery} } pageInfo { hasPreviousPage hasNextPage } } } `)).json()
     if(search.data.allCards.nodes.length >0){
         return search.data.allCards
     } else {
