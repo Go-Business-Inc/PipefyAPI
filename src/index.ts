@@ -178,7 +178,7 @@ export class PipefyAPI {
   
     const query = `
     mutation {
-      createTableRecord(input: {table_id: "${tableId}", fields_attributes: [ "${ fields_attributes.join('", "')}" ]  }){
+      createTableRecord(input: {table_id: "${tableId}", fields_attributes: [ ${ fields_attributes.join(', ')} ]  }){
         table_record {
           id
         }
