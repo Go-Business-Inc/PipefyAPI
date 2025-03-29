@@ -111,7 +111,10 @@ export class PipefyAPI {
     let fieldArray: any[] = []
     for(let field in fieldsToUpdate){
       if(Array.isArray(fieldsToUpdate[field])){
-        fieldArray.push(`{fieldId: "${field}", value: [ "${ fieldsToUpdate[field].join('", "') }" ] }`)
+        if(fieldsToUpdate[field].length > 0){
+          fieldArray.push(`{fieldId: "${field}", value: [ "${ fieldsToUpdate[field].join('", "') }" ] }`)
+          //console.log("FIELD SKIPPED:",field)
+        }
       } else {
         if(fieldsToUpdate[field] != null || fieldsToUpdate[field] != undefined){
           fieldArray.push(`{fieldId: "${field}", value: "${fieldsToUpdate[field]}" }`)
@@ -363,7 +366,7 @@ export class PipefyAPI {
       if(value != null || value != undefined){
         return `{ field_id: "${fieldName}", field_value: "${value}" }`
       } else {
-        console.log("FIELD SKIPPED:",fieldName)
+        // console.log("FIELD SKIPPED:",fieldName)
         return null
       }
     }
