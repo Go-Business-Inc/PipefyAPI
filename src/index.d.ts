@@ -306,7 +306,14 @@ export declare class PipefyAPI {
      */
     getCardsByRelationId(relations: CardRelation[], targetId: string): Card[]
 
-    private pipefyFetch;
+    /**
+     * Makes a fetch request to the Pipefy API with the given GraphQL query.
+     *
+     * @param query - The GraphQL query string to be sent in the request body.
+     * @param method - Optional. The HTTP method to use for the request (defaults to `'POST'`).
+     * @returns A promise that resolves to the `Response` object returned by the fetch call.
+     */
+    pipefyFetch(query: string, method?: string): Promise<Response>; 
 }
 
 

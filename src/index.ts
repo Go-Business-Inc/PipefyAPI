@@ -575,7 +575,7 @@ export class PipefyAPI {
    * @param method - The HTTP method to be used for the request (default is 'POST').
    * @returns A promise that resolves to the response of the fetch request.
    */
-  private pipefyFetch(query: string, method: string = 'POST'): Promise<Response> {
+  pipefyFetch(query: string, method: string = 'POST'): Promise<Response> {
 
     const options = {
         method: method,
