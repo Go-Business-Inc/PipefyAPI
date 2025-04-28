@@ -307,6 +307,17 @@ export declare class PipefyAPI {
     getCardsByRelationId(relations: CardRelation[], targetId: string): Card[]
 
     /**
+     * Creates a relation between two cards in Pipefy.
+     * 
+     * @param childId - The ID of the child card.
+     * @param parentId - The ID of the parent card.
+     * @param sourceId - The ID of the connection or the internal field ID used for the relation.
+     * @param sourceType - The type of the relation source. Either "PipeRelation" or "Field".
+     * @returns A promise resolving to the API response with the created card relation details.
+     */
+    createCardRelation(childId: string, parentId: string, sourceId: string, sourceType: string): Promise<Response>;
+
+    /**
      * Makes a fetch request to the Pipefy API with the given GraphQL query.
      *
      * @param query - The GraphQL query string to be sent in the request body.

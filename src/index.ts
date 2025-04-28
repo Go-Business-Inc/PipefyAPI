@@ -236,6 +236,19 @@ export class PipefyAPI {
 
 
   /**
+   * Creates a relation between two cards in Pipefy.
+   * 
+   * @param childId - The ID of the child card.
+   * @param parentId - The ID of the parent card.
+   * @param sourceId - The ID of the connection or the internal ID of the field used to relate the cards.
+   * @param sourceType - The source type of the relation. Valid options: `"PipeRelation"` or `"Field"`.
+   * @returns A promise that resolves to the API response containing the created card relation details.
+   */
+  createCardRelation(childId: string, parentId: string, sourceId: string, sourceType: string): Promise<Response>{
+    return this.pipefyFetch(`mutation { createCardRelation(input:{ childId: ${childId}, parentId: ${parentId}, sourceId: ${sourceId}, sourceType: "${sourceType}" }) { cardRelation { id childId parentId } } }`)
+  }
+
+  /**
    * Indexes all fields from Pipefy as an object indexable by name.
    *
    * @param {any[]} fields - Array with fields as received from Pipefy.
