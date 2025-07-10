@@ -87,11 +87,11 @@ export class PipefyAPI {
   }
 
   makeComment(cardId: string, text: string): Promise<Response>{
-    return this.pipefyFetch(`mutation{ createComment(input:{ card_id: "${cardId}", text: "${text.replaceAll(/"/g, "\\\"")}" }) { clientMutationId } }`)
+    return this.pipefyFetch(`mutation{ createComment(input:{ card_id: "${cardId}", text: "${text.replace(/"/g, "\\\"")}" }) { clientMutationId } }`)
   }
 
   updateFaseField(cardId: string, name: string, value: any, valueIsArray = false ): Promise<Response>{
-    let valueTosend = `"${value.replaceAll(/"/g, "\\\"")}"`
+    let valueTosend = `"${typeof value === 'string' ? value.replace(/"/g, "\\\"") : value}"`
     if(valueIsArray || Array.isArray(value) ){
       valueTosend = `[ "${value.join('", "')}" ]`
     }
@@ -117,7 +117,7 @@ export class PipefyAPI {
         }
       } else {
         if(fieldsToUpdate[field] != null || fieldsToUpdate[field] != undefined){
-          fieldArray.push(`{fieldId: "${field}", value: "${fieldsToUpdate[field].replaceAll(/"/g, "\\\"")}" }`)
+          fieldArray.push( `{fieldId: "${field}", value: "${typeof fieldsToUpdate[field] === 'string' ? fieldsToUpdate[field].replace(/"/g, "\\\"") : fieldsToUpdate[field]}" }`)
         } else if(fieldsToUpdate[field] == null) {
           fieldArray.push(`{fieldId: "${field}", value: null }`)
         } else if(fieldsToUpdate[field] == undefined) {
@@ -377,7 +377,7 @@ export class PipefyAPI {
   
     } else {
       if(value != null || value != undefined){
-        return `{ field_id: "${fieldName}", field_value: "${value.replaceAll(/"/g, "\\\"")}" }`
+        return `{ field_id: "${fieldName}", field_value: "${typeof value === 'string' ? value.replace(/"/g, "\\\"") : value}" }`
       } else {
         // console.log("FIELD SKIPPED:",fieldName)
         return null
