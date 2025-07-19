@@ -90,12 +90,16 @@ export class PipefyAPI {
     return this.pipefyFetch(`mutation{ createComment(input:{ card_id: "${cardId}", text: "${text.replace(/"/g, "\\\"")}" }) { clientMutationId } }`)
   }
 
-  updateFaseField(cardId: string, name: string, value: any, valueIsArray = false ): Promise<Response>{
+  updateFaseField(cardId: string, name: string, value: any, valueIsArray = false, operation: string | null = null): Promise<Response>{
     let valueTosend = `"${typeof value === 'string' ? value.replace(/"/g, "\\\"") : value}"`
     if(valueIsArray || Array.isArray(value) ){
       valueTosend = `[ "${value.join('", "')}" ]`
     }
-    const query = `mutation { updateFieldsValues(input: {nodeId: "${cardId}", values: {fieldId: "${name}", value: ${valueTosend} }}) { clientMutationId } }`
+    let op = ``
+    if(operation != null && operation != undefined){
+      op = `, operation: ${operation}`
+    }
+    const query = `mutation { updateFieldsValues(input: {nodeId: "${cardId}", values: {fieldId: "${name}", value: ${valueTosend} ${op} }}) { clientMutationId } }`
     //console.log('QUERY: ',query)
     return this.pipefyFetch(query)
   }

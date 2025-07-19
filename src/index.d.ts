@@ -103,12 +103,19 @@ export declare class PipefyAPI {
     makeComment(cardId: string, text: string): Promise<any>;
 
     /**
-     * Updates a field in a specified card phase.
-     * @param cardId The ID of the card to update.
-     * @param options Options for updating the field.
-     * @returns A promise that resolves when the field is successfully updated.
+     * Updates a specific field in a Pipefy card with a given value.
+     *
+     * @param cardId - The ID of the card where the field will be updated.
+     * @param name - The ID of the field to be updated.
+     * @param value - The new value to assign to the field. Can be a string or an array.
+     * @param valueIsArray - Optional. Set to true if the value is an array. Defaults to false.
+     * @param operation - Optional. Specifies an additional operation to be applied (e.g., ADD, REMOVE).
+     * @returns A Promise resolving with the API response after attempting to update the field value.
+     *
+     * The function constructs and sends a GraphQL mutation to update the specified field.
+     * It properly formats string and array values and handles optional operations.
      */
-    updateFaseField(cardId: string, name: string, value: any, valueIsArray?: boolean): Promise<any>;
+    updateFaseField(cardId: string, name: string, value: any, valueIsArray?: boolean, operation?: string | null): Promise<any>;
 
     /**
      * Clears a connector field in a specified card.
