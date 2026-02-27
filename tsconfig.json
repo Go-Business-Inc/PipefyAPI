@@ -1,22 +1,18 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "Node16",
     "target": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "removeComments": true,
-    "lib": ["ESNext", "DOM"]
+    "lib": ["ESNext", "DOM"],
+    "ignoreDeprecations": "5.0"
   },
-  "include": [
-    "./src/**/*.ts"
-  ],
-  "exclude": [
-    "./node_modules"
-  ]
+  "include": ["./src/**/*.ts", "./tests/**/*.ts"],
+  "exclude": ["./node_modules"]
 }

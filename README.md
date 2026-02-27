@@ -4,6 +4,8 @@
 
 This library provides a convenient way to interact with the Pipefy API, allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.
 
+> **Developer Note**: Please refer to [AGENTS.md](./AGENTS.md) for development rules, technology stack, and TDD guidelines.
+
 ## Features
 
 - Create, update, and delete cards
@@ -26,7 +28,10 @@ npm install pipefy-api
 
 ### Constructor
 
-- **PipefyAPI(apiKey: string, organizationId: string, timeZone: string, intlCode: string, logTable?: string | null, endpoint?: string)**: Creates an instance of PipefyAPI.
+The Pipefy API supports two authentication methods securely through a configuration object, or via legacy positional arguments:
+
+- **Legacy Positional:** `PipefyAPI(apiKey: string, organizationId: string, timeZone: string, intlCode: string, logTable?: string | null, endpoint?: string)`
+- **Configuration Object:** `PipefyAPI(config: PipefyConfig)` where `PipefyConfig` can be `PersonalTokenConfig` or `ServiceAccountConfig`.
 
 ### Methods
 
@@ -105,28 +110,46 @@ These functions and types cover operations for managing cards, relations, commen
 
 ## Usage
 
+### Using Service Account Credentials (Recommended for integrations)
+
+Service accounts are the best practice for server-to-server integrations. The library natively supports "Lazy Token Fetching," meaning it will automatically generate and refresh tokens for you in the background right before making API requests!
+
 ```typescript
-import { PipefyAPI } from "pipefy-api";
+import { PipefyAPI } from 'pipefy-api';
 
-const apiKey = "YOUR_API_KEY";
-const organizationId = "YOUR_ORGANIZATION_ID";
-const logTable = "LOG_TABLE_ID"; // Table used for Bug Reports
-const timeZone = "YOUR_TIME_ZONE"; // example: "America/Bogota" --> https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-const intlCode = "YOUR_INTL_CODE"; // 'es-pa' --> https://www.andiamo.co.uk/resources/iso-language-codes/
+const pipefy = new PipefyAPI({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+  tokenEndpoint: 'https://auth.pipefy.com/oauth/token', // Your specific region endpoint
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota', // Check: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  intlCode: 'es-pa', // Check: https://www.andiamo.co.uk/resources/iso-language-codes/
+  logTable: 'LOG_TABLE_ID', // Optional table used for Bug Reports
+});
 
-const pipefy = new PipefyAPI(
-  apiKey,
-  organizationId,
-  logTable,
-  timeZone,
-  intlCode
-);
-
-// Example usage
-const cardId = "CARD_ID";
-const result = await pipefy.getCardInfo(cardId);
+// ... No need to worry about manually fetching tokens!
+const result = await pipefy.getCardInfo('CARD_ID');
 const resultData = await result.json();
-console.log(`Code: ${result.status}: ${result.statusText}`);
+console.log(resultData);
+```
+
+### Using Personal Access Token
+
+```typescript
+import { PipefyAPI } from 'pipefy-api';
+
+const pipefy = new PipefyAPI({
+  token: 'YOUR_PERSONAL_TOKEN',
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota',
+  intlCode: 'es-pa',
+});
+
+// You can still use the legacy positional arguments!
+// const pipefy = new PipefyAPI("YOUR_PERSONAL_TOKEN", "YOUR_ORGANIZATION_ID", "America/Bogota", "es-pa");
+
+const result = await pipefy.getCardInfo('CARD_ID');
+const resultData = await result.json();
 console.log(resultData);
 ```
 
