@@ -828,7 +828,7 @@ export class PipefyAPI {
   async getServiceAccountToken(
     clientId: string,
     clientSecret: string,
-    tokenEndpoint: string,
+    tokenEndpoint: string = 'https://app.pipefy.com/oauth/token',
   ): Promise<saTokenObject> {
     let saTokenObj: saTokenObject;
     const response = await fetch(tokenEndpoint, {
