@@ -4,8 +4,6 @@
 
 This library provides a convenient way to interact with the Pipefy API, allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.
 
-> **Developer Note**: Please refer to [AGENTS.md](./AGENTS.md) for development rules, technology stack, and TDD guidelines.
-
 ## Features
 
 - Create, update, and delete cards
@@ -44,7 +42,7 @@ The Pipefy API supports two authentication methods securely through a configurat
 - **allCardsIds(pipeId: string, parents?: boolean, children?: boolean): Promise<any | null>**
   - Returns the IDs of all cards in a pipe, with option to include relations.
 - **findCardFromTitle(title: string, pipeId: string): Promise<any | null>**
-  - Searches for a card by its title within a pipe and returns its ID.
+  - Searches for a card by its title within a pipe and returns its ID or full data.
 - **findCardFromField(field: string, value: string, pipeId: string, first?: boolean, cards?: boolean): Promise<any>**
   - Searches for cards by the value of a specific field in a pipe.
 - **makeComment(cardId: string, text: string): Promise<Response>**
@@ -103,6 +101,7 @@ The Pipefy API supports two authentication methods securely through a configurat
 ### Exported Types
 
 - `getCardInfoOptions`: Options for advanced card queries.
+- `saTokenObject`: Service Account Token response format.
 - `Card`: Represents a Pipefy card.
 - `CardRelation`: Relation between cards.
 

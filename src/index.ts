@@ -13,14 +13,22 @@ export interface PersonalTokenConfig extends BaseConfig {
 export interface ServiceAccountConfig extends BaseConfig {
   clientId: string;
   clientSecret: string;
-  tokenEndpoint: string;
+  tokenEndpoint: string | 'https://app.pipefy.com/oauth/token';
 }
 
 export type PipefyConfig = PersonalTokenConfig | ServiceAccountConfig;
 
+export interface saTokenObject {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  created_at: number;
+}
+
 export class PipefyAPI {
   private config: PipefyConfig;
   private currentToken: string | null;
+  private tokenType: string | null;
   private tokenExpiresAt: number | null;
 
   private get endpoint(): string {
@@ -33,6 +41,9 @@ export class PipefyAPI {
 
   // Not used internally anymore since pipefyFetch gets token directly, but kept for compatibility just in case
   private get apiKey(): string {
+    if (this.currentToken) {
+      return this.currentToken;
+    }
     return 'token' in this.config ? this.config.token : '';
   }
 
@@ -57,6 +68,7 @@ export class PipefyAPI {
     endpoint = 'https://api.pipefy.com/graphql',
   ) {
     this.currentToken = null;
+    this.tokenType = null;
     this.tokenExpiresAt = null;
 
     if (typeof configOrApiKey === 'string') {
@@ -90,14 +102,17 @@ export class PipefyAPI {
       return this.currentToken;
     }
 
-    const response = await this.getServiceAccountToken(
+    const response = (await this.getServiceAccountToken(
       this.config.clientId,
       this.config.clientSecret,
       this.config.tokenEndpoint,
-    );
+    )) as saTokenObject;
 
     this.currentToken = response.access_token;
-    this.tokenExpiresAt = Date.now() + response.expires_in * 1000;
+    this.tokenType = response.token_type;
+
+    // Pipefy returns created_at in seconds, we convert all to milliseconds
+    this.tokenExpiresAt = response.created_at * 1000 + response.expires_in * 1000;
 
     return this.currentToken!;
   }
@@ -418,6 +433,9 @@ export class PipefyAPI {
    * @returns {any} - An indexed object containing field values.
    */
   indexFields(fields: any[], full: Boolean = false): any {
+    if (!Array.isArray(fields)) {
+      return {};
+    }
     const indexedFields: any = {};
     for (const item of fields) {
       const { indexName, name, value, report_value, ...rest } = item;
@@ -477,7 +495,10 @@ export class PipefyAPI {
     return await this.createTableRecord(this.logTable, [
       { id: 'error_code', value: errorCode },
       { id: 'message', value: message },
-      { id: 'date', value: now.toLocaleString(this.intlCode, { timeZone: this.timeZone }) },
+      {
+        id: 'date',
+        value: now.toLocaleString(this.intlCode, { timeZone: this.timeZone }),
+      },
       { id: 'function', value: functionName },
     ]);
   }
@@ -772,15 +793,27 @@ export class PipefyAPI {
    */
   async pipefyFetch(query: string, method: string = 'POST'): Promise<Response> {
     const token = await this.ensureValidToken();
+    const tokenType = this.tokenType || 'Bearer';
     const options = {
       method: method,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `${tokenType} ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ query: query }),
     };
-    return fetch(this.endpoint, options);
+
+    const response = await fetch(this.endpoint, options);
+
+    if (!response.ok) {
+      console.error(`[PipefyAPI] HTTP error! status: ${response.status} ${response.statusText}`);
+      try {
+        const errText = await response.clone().text();
+        console.error(`[PipefyAPI] Response body: ${errText}`);
+      } catch (e) {}
+    }
+
+    return response;
   }
 
   /**
@@ -796,7 +829,8 @@ export class PipefyAPI {
     clientId: string,
     clientSecret: string,
     tokenEndpoint: string,
-  ): Promise<any> {
+  ): Promise<saTokenObject> {
+    let saTokenObj: saTokenObject;
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
@@ -811,9 +845,11 @@ export class PipefyAPI {
 
     if (!response.ok) {
       throw new Error(`Error fetching service account token: ${response.statusText}`);
+    } else {
+      saTokenObj = (await response.json()) as saTokenObject;
     }
 
-    return response.json();
+    return saTokenObj;
   }
 }
 

@@ -22,13 +22,20 @@ export interface PersonalTokenConfig extends BaseConfig {
 export interface ServiceAccountConfig extends BaseConfig {
   clientId: string;
   clientSecret: string;
-  tokenEndpoint: string;
+  tokenEndpoint: string | 'https://app.pipefy.com/oauth/token';
 }
 
 /**
  * Configuration options for PipefyAPI.
  */
 export type PipefyConfig = PersonalTokenConfig | ServiceAccountConfig;
+
+export interface saTokenObject {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  created_at: number;
+}
 
 /**
  * Represents a PipefyClient instance.
@@ -43,6 +50,7 @@ export type PipefyConfig = PersonalTokenConfig | ServiceAccountConfig;
 export declare class PipefyAPI {
   private config: PipefyConfig;
   private currentToken: string | null;
+  private tokenType: string | null;
   private tokenExpiresAt: number | null;
 
   constructor(
@@ -100,24 +108,12 @@ export declare class PipefyAPI {
   allCardsIds(pipeId: string, parents?: boolean, children?: boolean): Promise<any | null>;
 
   /**
-   * Finds a card from a specific field in a Pipefy pipe.
-   *
-   * @param {string} field - The field to search by.
-   * @param {string} value - The value to search for in the specified field.
-   * @param {string} pipeId - The ID of the pipe to search within.
-   * @param {boolean} [first=true] - Whether to return only the first matching card or all matching cards.
-   * @param {boolean} [cards=false] - Whether to include card fields and current phase information in the result.
-   * @returns {Promise<any>} A promise that resolves to the card(s) found, or null if no cards are found.
-   */
-  findCard(cardTitle: string, pipeId: string): Promise<any>;
-
-  /**
    * Finds a card by its title within a specified pipe in Pipefy.
    * @param {string} title - The title of the card to search for.
    * @param {string} pipeId - The ID of the pipe in which to search for the card.
    * @returns {Promise<string | null>} A promise that resolves with the ID of the found card, or null if not found.
    */
-  findCardFromTitle(title: string, pipeId: string): Promise<string | null>;
+  findCardFromTitle(title: string, pipeId: string): Promise<any | null>;
 
   /**
    * Look for a card with a particular field value in a Pipe.
@@ -147,7 +143,7 @@ export declare class PipefyAPI {
    * @param options Options for making the comment.
    * @returns A promise that resolves when the comment is successfully made.
    */
-  makeComment(cardId: string, text: string): Promise<any>;
+  makeComment(cardId: string, text: string): Promise<Response>;
 
   /**
    * Updates a specific field in a Pipefy card with a given value.
@@ -168,7 +164,7 @@ export declare class PipefyAPI {
     value: any,
     valueIsArray?: boolean,
     operation?: string | null,
-  ): Promise<any>;
+  ): Promise<Response>;
 
   /**
    * Clears a connector field in a specified card.
@@ -176,7 +172,7 @@ export declare class PipefyAPI {
    * @param field The name of the field to clear.
    * @returns A promise that resolves when the field is successfully cleared.
    */
-  clearConnectorField(cardId: string, field: string): Promise<any>;
+  clearConnectorField(cardId: string, field: string): Promise<Response>;
 
   /**
    * Updates multiple fields in a specified card.
@@ -184,7 +180,7 @@ export declare class PipefyAPI {
    * @param fieldsToUpdate An object containing the fields to update, where the keys are field IDs and the values are the new values.
    * @returns A promise that resolves when the fields are successfully updated.
    */
-  updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<any>;
+  updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<Response>;
 
   /**
    * Sets assignees for a specified card.
@@ -192,7 +188,7 @@ export declare class PipefyAPI {
    * @param assignees An array of user IDs representing the assignees.
    * @returns A promise that resolves when the assignees are successfully set.
    */
-  setAssignees(cardId: string, assignees: string[]): Promise<any>;
+  setAssignees(cardId: string, assignees: string[]): Promise<Response>;
 
   /**
    * Updates the labels of a card in Pipefy using a GraphQL mutation.
@@ -209,7 +205,7 @@ export declare class PipefyAPI {
    * @param dueDate The new due date in ISO 8601 format (e.g., "2024-05-10T00:00:00Z").
    * @returns A promise that resolves when the due date is successfully set.
    */
-  setDueDate(cardId: string, dueDate: string): Promise<any>;
+  setDueDate(cardId: string, dueDate: string): Promise<Response>;
 
   /**
    * Finds a record in a specified table based on a field value.
@@ -224,7 +220,7 @@ export declare class PipefyAPI {
     fieldId: string,
     value: string,
     fullData?: boolean,
-  ): Promise<any>;
+  ): Promise<any | null>;
 
   /**
    * Creates a new record in a specified table with the provided data.
@@ -232,21 +228,21 @@ export declare class PipefyAPI {
    * @param data An array of objects containing the field ID and corresponding value for each field in the record.
    * @returns The ID of the newly created record if successful, otherwise returns null.
    */
-  createTableRecord(tableId: string, data?: any[]): Promise<any>;
+  createTableRecord(tableId: string, data?: any[]): Promise<any | null>;
 
   /**
    * Deletes a record from a specified table.
    * @param recordId The ID of the record to delete.
    * @returns A Promise that resolves to indicate success or failure of the deletion.
    */
-  deleteTablerecord(recordId: string): Promise<any>;
+  deleteTablerecord(recordId: string): Promise<Response>;
 
   /**
    * Retrieves a list of records from a specified table.
    * @param tableId The ID of the table from which to retrieve records.
    * @returns A Promise that resolves to the list of records retrieved from the table.
    */
-  listTableRecords(tableId: string): Promise<any>;
+  listTableRecords(tableId: string): Promise<Response>;
 
   /**
    * Logs an error message to a specified log table in Pipefy.
@@ -279,7 +275,7 @@ export declare class PipefyAPI {
    * @returns A promise that resolves to a string indicating the number of cards deleted and the pipe ID.
    *
    */
-  clearPipe(pipeId: string): Promise<any>;
+  clearPipe(pipeId: string): Promise<string>;
 
   /**
    * Creates an email to send from a specified card in Pipefy.
@@ -323,7 +319,7 @@ export declare class PipefyAPI {
    * @param fileName The name of the file for which to generate the pre-signed URL.
    * @returns A Promise that resolves with the pre-signed URL if successful, or null if there was an error.
    */
-  getPreSignedURL(fileName: string): Promise<string | null>;
+  getPreSignedURL(fileName: string): Promise<Response>;
 
   /**
    * Uploads a file from a specified URL to Pipefy.
@@ -422,7 +418,7 @@ export declare class PipefyAPI {
     clientId: string,
     clientSecret: string,
     tokenEndpoint: string,
-  ): Promise<any>;
+  ): Promise<saTokenObject>;
 }
 
 /**
