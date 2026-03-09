@@ -26,105 +26,178 @@ npm install pipefy-api
 
 ### Constructor
 
-- **PipefyAPI(apiKey: string, organizationId: string, timeZone: string, intlCode: string, logTable?: string | null, endpoint?: string)**:
-  Creates an instance of PipefyAPI.
+The Pipefy API supports two authentication methods securely through a configuration object, or via legacy positional arguments.
+
+**1. Configuration Object (Recommended)**
+
+```typescript
+// For Service Account
+const pipefy = new PipefyAPI({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+  tokenEndpoint: 'https://app.pipefy.com/oauth/token',
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota',
+  intlCode: 'es-pa',
+  logTable: 'LOG_TABLE_ID', // Optional
+});
+
+// For Personal Access Token (API Key)
+const pipefy = new PipefyAPI({
+  token: 'YOUR_PERSONAL_TOKEN',
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota',
+  intlCode: 'es-pa',
+  logTable: 'LOG_TABLE_ID', // Optional
+});
+```
+
+**2. Legacy Positional Arguments**
+
+The constructor maintains backward compatibility with the following signature:
+
+```typescript
+const pipefy = new PipefyAPI(apiKey, organizationId, logTable, timeZone, intlCode);
+```
+
+_(Note: Internally, the library handles the detection and mapping of these parameters to ensure correct initialization regardless of the order used in previous versions.)_
 
 ### Methods
 
 - **getCardInfo(cardId: string, children?: boolean, parents?: boolean, options?: getCardInfoOptions): Promise<any>**
-  Retrieves card information from Pipefy.
-
+  - Retrieves detailed information about a card, including parent/child relations and custom fields.
 - **getPipeInfo(pipeId: string): Promise<any>**
-  Retrieves pipe information from Pipefy.
-
+  - Retrieves basic information about a pipe by its ID.
 - **moveCardToPhase(cardId: string, phaseId: string): Promise<any>**
-  Moves a card to a specified phase in Pipefy.
-
-- **findCard(cardTitle: string, pipeId: string): Promise<string | null>**
-  Finds a card by its title within a specified pipe in Pipefy.
-
-- **findCardFromTitle(title: string, pipeId: string): Promise<string | null>**
-  Finds a card by its title within a specified pipe in Pipefy.
-
+  - Moves a card to a specific phase within a pipe.
+- **allCardsIds(pipeId: string, parents?: boolean, children?: boolean): Promise<any | null>**
+  - Returns the IDs of all cards in a pipe, with option to include relations.
+- **findCardFromTitle(title: string, pipeId: string): Promise<any | null>**
+  - Searches for a card by its title within a pipe and returns its ID or full data.
 - **findCardFromField(field: string, value: string, pipeId: string, first?: boolean, cards?: boolean): Promise<any>**
-  Searches for a card by a field value within a specified pipe in Pipefy.
-
-- **makeComment(cardId: string, text: string): Promise<any>**
-  Makes a comment on a specified card in Pipefy.
-
-- **updateFaseField(cardId: string, name: string, value: any, valueIsArray?: boolean): Promise<any>**
-  Updates a field in a specified card phase in Pipefy.
-
-- **clearConnectorField(cardId: string, field: string): Promise<any>**
-  Clears a connector field in a specified card in Pipefy.
-
-- **updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<any>**
-  Updates multiple fields in a specified card in Pipefy.
-
-- **setAssignees(cardId: string, assignees: string[]): Promise<any>**
-  Sets assignees for a specified card in Pipefy.
-
-- **setDueDate(cardId: string, dueDate: string): Promise<any>**
-  Sets the due date for a specified card in Pipefy.
-
-- **findRecordInTable(taleId: string, fieldId: string, value: string, fullData?: boolean): Promise<any>**
-  Finds a record in a specified table based on a field value in Pipefy.
-
-- **createTableRecord(tableId: string, data?: any[]): Promise<any>**
-  Creates a new record in a specified table in Pipefy.
-
-- **deleteTablerecord(recordId: string): Promise<any>**
-  Deletes a record from a specified table in Pipefy.
-
-- **listTableRecords(tableId: string): Promise<any>**
-  Retrieves a list of records from a specified table in Pipefy.
-
+  - Searches for cards by the value of a specific field in a pipe.
+- **makeComment(cardId: string, text: string): Promise<Response>**
+  - Adds a comment to a card.
+- **updateFaseField(cardId: string, name: string, value: any, valueIsArray?: boolean, operation?: string | null): Promise<Response>**
+  - Updates the value of a field in a card, allowing simple or array values.
+- **clearConnectorField(cardId: string, field: string): Promise<Response>**
+  - Clears the value of a connector field in a card.
+- **updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<Response>**
+  - Updates multiple fields of a card in a single operation.
+- **setAssignees(cardId: string, assignees: string[]): Promise<Response>**
+  - Assigns users as assignees to a card.
+- **setLabels(cardId: string, labels: string[] | null): Promise<Response>**
+  - Assigns or clears labels on a card.
+- **setDueDate(cardId: string, dueDate: string): Promise<Response>**
+  - Sets the due date for a card.
+- **findRecordInTable(taleId: string, fieldId: string, value: string, fullData?: boolean): Promise<any | null>**
+  - Searches for a record in a table by the value of a field, with option to get full data.
+- **createTableRecord(tableId: string, data?: any[]): Promise<any | null>**
+  - Creates a new record in a Pipefy table.
+- **deleteTablerecord(recordId: string): Promise<Response>**
+  - Deletes a record from a table by its ID.
+- **listTableRecords(tableId: string): Promise<Response>**
+  - Lists all records in a table.
+- **getCardsByRelationId(relations: CardRelation[], targetId: string): Card[]**
+  - Returns the cards associated with a specific relation.
+- **createCardRelation(childId: string, parentId: string, sourceId: string, sourceType: string): Promise<Response>**
+  - Creates a relation between two cards (parent/child).
+- **indexFields(fields: any[], full?: Boolean): any**
+  - Indexes the fields of a card for quick access by name.
+- **findCardsById(array: any[], targetId: string): any | null**
+  - Searches for cards within an array by ID.
+- **getValueFromField(dataArray: any, indexName: string, empty?: boolean, reportValue?: boolean): string | undefined**
+  - Gets the value of a specific field from a card.
 - **logError(message: string, errorCode?: number, functionName?: string): Promise<any>**
-  Logs an error message to a specified log table in Pipefy.
-
+  - Logs an error to the configured log table.
 - **clearTable(tableId: string): Promise<any>**
-  Clears all records from a specified table in Pipefy.
-
-- **createEmailTosend(cardId: string, pipeId: string, from: string, fromName: string, to: string, subject: string, html: string): Promise<string | null>**
-  Creates an email to send from a specified card in Pipefy.
-
+  - Deletes all records from a table.
+- **deleteCard(cardId: string): Promise<Response>**
+  - Deletes a card by its ID.
+- **clearPipe(pipeId: string): Promise<string>**
+  - Deletes all cards from a pipe.
+- **createEmailTosend(cardId: string, pipeId: string, from: string, fromName: string, to: string, subject: string, html: string): Promise<any>**
+  - Creates an email ready to send from a card.
 - **sendEmail(emailId: string): Promise<any>**
-  Sends an email using the specified email ID returned by the createEmailTosend function.
-
-- **createCard(pipeId: string, dataArray: any, reportError?: boolean): Promise<any>**
-  Creates a new card in a specified pipe in Pipefy.
-
-- **getPreSignedURL(fileName: string): Promise<string | null>**
-  Generates a pre-signed URL for uploading a file to Pipefy.
-
+  - Sends a previously created email.
+- **createCard(pipeID: string, dataArray: any, reportError?: boolean): Promise<any>**
+  - Creates a new card in a pipe.
+- **getPreSignedURL(fileName: string): Promise<Response>**
+  - Generates a pre-signed URL for uploading files to Pipefy.
 - **uploadFileFromUrl(sourceUrl: string): Promise<string | null>**
-  Uploads a file from a specified URL to Pipefy.
-
+  - Uploads a file to Pipefy from an external URL.
 - **uploadFileFromBuffer(fileName: string, fileData: any): Promise<string | null>**
-  Uploads a file from a buffer to Pipefy.
+  - Uploads a file to Pipefy from a data buffer.
 
-These functions cover a variety of operations you can perform in Pipefy, including card management, comments, users, due dates, table records, and file handling.
+### Exported Types
 
+- `getCardInfoOptions`: Options for advanced card queries.
+- `saTokenObject`: Service Account Token response format.
+- `Card`: Represents a Pipefy card.
+- `CardRelation`: Relation between cards.
+
+These functions and types cover operations for managing cards, relations, comments, users, due dates, table records, and file handling in Pipefy.
 
 ## Usage
+
+### Using Service Account Credentials (Recommended for integrations)
+
+Service accounts are the best practice for server-to-server integrations. The library natively supports "Lazy Token Fetching," meaning it will automatically generate and refresh tokens for you in the background right before making API requests!
 
 ```typescript
 import { PipefyAPI } from 'pipefy-api';
 
-const apiKey = 'YOUR_API_KEY';
-const organizationId = 'YOUR_ORGANIZATION_ID';
-const logTable = 'LOG_TABLE_ID'; // Table used for Bug Reports
-const timeZone = 'YOUR_TIME_ZONE'; // example: "America/Bogota" --> https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-const intlCode = 'YOUR_INTL_CODE'; // 'es-pa' --> https://www.andiamo.co.uk/resources/iso-language-codes/
+const pipefy = new PipefyAPI({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+  tokenEndpoint: 'https://auth.pipefy.com/oauth/token', // Your specific region endpoint
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota', // Check: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  intlCode: 'es-pa', // Check: https://www.andiamo.co.uk/resources/iso-language-codes/
+  logTable: 'LOG_TABLE_ID', // Optional table used for Bug Reports
+});
 
-const pipefy = new PipefyAPI(apiKey, organizationId, logTable, timeZone, intlCode);
-
-// Example usage
-const cardId = 'CARD_ID';
-const result = await pipefy.getCardInfo(cardId);
+// ... No need to worry about manually fetching tokens!
+const result = await pipefy.getCardInfo('CARD_ID');
 const resultData = await result.json();
-console.log(`Code: ${result.status}: ${result.statusText}`);
 console.log(resultData);
+```
+
+### Using Personal Access Token (API Key)
+
+You can initialize the API using a configuration object or the legacy positional arguments:
+
+**Using Configuration Object:**
+
+```typescript
+import { PipefyAPI } from 'pipefy-api';
+
+const pipefy = new PipefyAPI({
+  token: 'YOUR_PERSONAL_TOKEN',
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota',
+  intlCode: 'es-pa',
+});
+```
+
+**Using Legacy Positional Arguments:**
+
+```typescript
+import { PipefyAPI } from 'pipefy-api';
+
+const pipefy = new PipefyAPI(
+  'YOUR_PERSONAL_TOKEN',
+  'YOUR_ORGANIZATION_ID',
+  'LOG_TABLE_ID',
+  'America/Bogota',
+  'es-pa',
+);
+```
+
+const result = await pipefy.getCardInfo('CARD_ID');
+const resultData = await result.json();
+console.log(resultData);
+
 ```
 
 ### How to get Pipefy API Key
@@ -141,7 +214,6 @@ Follow these steps:
 
 5. **Use the API Key:** Copy the newly generated API Key. You will use this key in the constructor of the PipefyAPI class in your code.
 
-
 ### How to get Organization ID
 
 To find your Pipefy Organization ID, follow these steps:
@@ -154,17 +226,16 @@ To find your Pipefy Organization ID, follow these steps:
 
 4. **Note down the Organization ID:** Make a note of the Organization ID from the URL. This ID is required in the constructor of the PipefyAPI class in your code or configurations when interacting with Pipefy's API.
 
-
 ### Log Table
 
 To use the Log Table feature with PipefyAPI, follow these steps to create a database within your Pipefy account with the following structure:
 
-| Column Name  | Data Type  |
-|--------------|------------|
-| Error Code   | short text |
-| Message      | long text  |
-| Date         | short text |
-| Function     | short text |
+| Column Name | Data Type  |
+| ----------- | ---------- |
+| Error Code  | short text |
+| Message     | long text  |
+| Date        | short text |
+| Function    | short text |
 
 Then, use the ID of the database in the constructor of the PipefyAPI class.
 
@@ -174,7 +245,6 @@ Then, use the ID of the database in the constructor of the PipefyAPI class.
 
 3. **Use the Database ID:** Copy the LOG_TABLE_ID from the URL and use it in the constructor of the PipefyAPI class in your code or configurations.
 
-
 ### Time Zone Configuration
 
 To configure the time zone in the PipefyAPI class, follow these steps:
@@ -182,7 +252,6 @@ To configure the time zone in the PipefyAPI class, follow these steps:
 1. **Choose Your Time Zone:** Replace `'YOUR_TIME_ZONE'` with your desired time zone identifier. For example, `"America/Bogota"` represents the time zone for Bogota, Colombia. You can find a list of time zone identifiers on [Wikipedia's list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
 
 2. **Update the Code:** Replace `const timeZone = 'YOUR_TIME_ZONE';` with the chosen time zone identifier in the constructor of the PipefyAPI class in your code or configurations.
-
 
 ### Internationalization Code Configuration
 
@@ -193,7 +262,6 @@ To configure the internationalization (i18n) code in the PipefyAPI class, follow
 2. **Update the Code:** Replace `const intlCode = 'YOUR_INTL_CODE';` with the chosen internationalization code in the constructor of the PipefyAPI class in your code or configurations.
 
 By setting the internationalization code, you specify the language and regional preferences for output text and formatting in PipefyAPI.
-
 
 ## Contributing
 
@@ -207,4 +275,4 @@ This project is licensed under the [MIT License](https://opensource.org/license/
 
 - **Name:** Ramón David Sifuentes C.
 - **Website:** [www.gobusinessinc.com](https://gobusinessinc.com)
-
+```

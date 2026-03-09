@@ -131,3 +131,8 @@ dist
 
 # Ignorar el archivo package-lock.json de npm
 package-lock.json
+
+# Ignorar los agentes de IA
+.agent/
+AGENTS.md
+
