@@ -71,23 +71,32 @@ export class PipefyAPI {
     this.tokenType = null;
     this.tokenExpiresAt = null;
 
-    if (typeof configOrApiKey === 'string') {
-      if (!organizationId || !timeZone || !intlCode) {
-        throw new Error(
-          'organizationId, timeZone, and intlCode are required when using a token string',
-        );
+    if (typeof configOrApiKey === 'string' || !configOrApiKey) {
+      // For backwards compatibility, detect if the old signature is being used.
+      // Old call (index.ts): apiKey, organizationId, logTable, timeZone, intlCode
+      // New call (pipefyClient.ts): apiKey, organizationId, timeZone, intlCode, logTable
+      // In the old call, the 4th argument (intlCode param) is actually the timeZone (e.g. "Europe/London").
+      let resolvedTimeZone = timeZone;
+      let resolvedIntlCode = intlCode;
+      let resolvedLogTable = logTable;
+
+      if (intlCode && intlCode.includes('/')) {
+        resolvedLogTable = timeZone as string;
+        resolvedTimeZone = intlCode;
+        resolvedIntlCode = logTable as string;
       }
+
       this.config = {
-        token: configOrApiKey,
-        organizationId: organizationId,
-        timeZone: timeZone,
-        intlCode: intlCode,
-        logTable: logTable,
+        token: (configOrApiKey as string) || '',
+        organizationId: organizationId || '',
+        timeZone: resolvedTimeZone || 'America/Bogota',
+        intlCode: resolvedIntlCode || 'es-pa',
+        logTable: resolvedLogTable || '',
         endpoint: endpoint,
       };
     } else {
-      this.config = configOrApiKey;
-      if (!this.config.endpoint) {
+      this.config = configOrApiKey as PipefyConfig;
+      if (this.config && !this.config.endpoint) {
         this.config.endpoint = 'https://api.pipefy.com/graphql';
       }
     }
@@ -850,6 +859,23 @@ export class PipefyAPI {
     }
 
     return saTokenObj;
+  }
+
+  /**
+   * Retrieves the current tracking service account token object if initialized as a service account.
+   *
+   * @returns {saTokenObject | null} The resolved token info or null if using personal tokens/not authorized
+   */
+  public getTokenObject(): saTokenObject | null {
+    if (this.currentToken && this.tokenType && this.tokenExpiresAt) {
+      return {
+        access_token: this.currentToken,
+        token_type: this.tokenType,
+        expires_in: this.tokenExpiresAt > 0 ? (this.tokenExpiresAt - Date.now()) / 1000 : 0,
+        created_at: this.tokenExpiresAt - 3600 * 24 * 1000, // An approximation if not storing `created_at`
+      };
+    }
+    return null;
   }
 }
 

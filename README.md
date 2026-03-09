@@ -26,10 +26,41 @@ npm install pipefy-api
 
 ### Constructor
 
-The Pipefy API supports two authentication methods securely through a configuration object, or via legacy positional arguments:
+The Pipefy API supports two authentication methods securely through a configuration object, or via legacy positional arguments.
 
-- **Legacy Positional:** `PipefyAPI(apiKey: string, organizationId: string, timeZone: string, intlCode: string, logTable?: string | null, endpoint?: string)`
-- **Configuration Object:** `PipefyAPI(config: PipefyConfig)` where `PipefyConfig` can be `PersonalTokenConfig` or `ServiceAccountConfig`.
+**1. Configuration Object (Recommended)**
+
+```typescript
+// For Service Account
+const pipefy = new PipefyAPI({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+  tokenEndpoint: 'https://app.pipefy.com/oauth/token',
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota',
+  intlCode: 'es-pa',
+  logTable: 'LOG_TABLE_ID', // Optional
+});
+
+// For Personal Access Token (API Key)
+const pipefy = new PipefyAPI({
+  token: 'YOUR_PERSONAL_TOKEN',
+  organizationId: 'YOUR_ORGANIZATION_ID',
+  timeZone: 'America/Bogota',
+  intlCode: 'es-pa',
+  logTable: 'LOG_TABLE_ID', // Optional
+});
+```
+
+**2. Legacy Positional Arguments**
+
+The constructor maintains backward compatibility with the following signature:
+
+```typescript
+const pipefy = new PipefyAPI(apiKey, organizationId, logTable, timeZone, intlCode);
+```
+
+_(Note: Internally, the library handles the detection and mapping of these parameters to ensure correct initialization regardless of the order used in previous versions.)_
 
 ### Methods
 
@@ -132,7 +163,11 @@ const resultData = await result.json();
 console.log(resultData);
 ```
 
-### Using Personal Access Token
+### Using Personal Access Token (API Key)
+
+You can initialize the API using a configuration object or the legacy positional arguments:
+
+**Using Configuration Object:**
 
 ```typescript
 import { PipefyAPI } from 'pipefy-api';
@@ -143,13 +178,26 @@ const pipefy = new PipefyAPI({
   timeZone: 'America/Bogota',
   intlCode: 'es-pa',
 });
+```
 
-// You can still use the legacy positional arguments!
-// const pipefy = new PipefyAPI("YOUR_PERSONAL_TOKEN", "YOUR_ORGANIZATION_ID", "America/Bogota", "es-pa");
+**Using Legacy Positional Arguments:**
+
+```typescript
+import { PipefyAPI } from 'pipefy-api';
+
+const pipefy = new PipefyAPI(
+  'YOUR_PERSONAL_TOKEN',
+  'YOUR_ORGANIZATION_ID',
+  'LOG_TABLE_ID',
+  'America/Bogota',
+  'es-pa',
+);
+```
 
 const result = await pipefy.getCardInfo('CARD_ID');
 const resultData = await result.json();
 console.log(resultData);
+
 ```
 
 ### How to get Pipefy API Key
@@ -227,3 +275,4 @@ This project is licensed under the [MIT License](https://opensource.org/license/
 
 - **Name:** Ramón David Sifuentes C.
 - **Website:** [www.gobusinessinc.com](https://gobusinessinc.com)
+```
