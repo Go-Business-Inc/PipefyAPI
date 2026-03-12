@@ -1,15 +1,16 @@
 {
   "name": "pipefy-api",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "This library provides a convenient way to interact with the Pipefy API, allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc && cp src/index.d.ts dist/src/index.d.ts",
+    "build": "tsc && cp src/index.d.ts dist/index.d.ts",
     "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
-    "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'"
   },
   "repository": {
     "type": "git",
@@ -31,9 +32,6 @@
     "node-fetch": "^3.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.0",
     "typescript": "^5.0.0"
   },
   "bugs": {
