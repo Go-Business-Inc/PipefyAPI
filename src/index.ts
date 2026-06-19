@@ -149,6 +149,42 @@ export class PipefyAPI {
     return this.pipefyFetch(`{ pipe(id: "${pipeId}") { id name } }`);
   }
 
+  /**
+   * Lists the pipes of an organization.
+   *
+   * @param organizationId - The organization to query. Defaults to the one configured
+   *   in the constructor.
+   * @returns A promise resolving to an array of pipes (`{ id, name }`), or `null` on error.
+   */
+  async listPipes(organizationId: string = this.organizationId): Promise<Pipe[] | null> {
+    const query = `{ organization(id: "${organizationId}") { id name pipes { id name } } }`;
+    const result: any = await (await this.pipefyFetch(query)).json();
+
+    if (result.errors != undefined) {
+      console.log('ERROR: listPipes: ', result.errors[0].message);
+      return null;
+    }
+    return result.data.organization.pipes;
+  }
+
+  /**
+   * Lists the database tables of an organization.
+   *
+   * @param organizationId - The organization to query. Defaults to the one configured
+   *   in the constructor.
+   * @returns A promise resolving to an array of tables (`{ id, name }`), or `null` on error.
+   */
+  async listTables(organizationId: string = this.organizationId): Promise<Table[] | null> {
+    const query = `{ organization(id: "${organizationId}") { id name tables { edges { node { id name } } } } }`;
+    const result: any = await (await this.pipefyFetch(query)).json();
+
+    if (result.errors != undefined) {
+      console.log('ERROR: listTables: ', result.errors[0].message);
+      return null;
+    }
+    return result.data.organization.tables.edges.map((edge: any) => edge.node);
+  }
+
   moveCardToPhase(cardId: string, phaseId: string): Promise<any> {
     return this.pipefyFetch(
       `mutation{ moveCardToPhase(input:{ card_id: ${cardId}, destination_phase_id: ${phaseId} }) { clientMutationId } }`,
@@ -579,6 +615,165 @@ export class PipefyAPI {
   }
 
   /**
+   * Builds the GraphQL `filters` input fragment for a webhook from a filters object.
+   * Returns an empty string when no usable filters are provided.
+   *
+   * @param filters - Optional webhook filters (`field_id` and/or `on_phase_id`).
+   * @returns A string like `filters: { field_id: [ 1, 2 ], on_phase_id: [ 3 ] }` or `''`.
+   */
+  private buildWebhookFilters(filters?: WebhookFilters): string {
+    if (!filters) return '';
+    const parts: string[] = [];
+    if (Array.isArray(filters.field_id) && filters.field_id.length > 0) {
+      parts.push(`field_id: [ ${filters.field_id.join(', ')} ]`);
+    }
+    if (Array.isArray(filters.on_phase_id) && filters.on_phase_id.length > 0) {
+      parts.push(`on_phase_id: [ ${filters.on_phase_id.join(', ')} ]`);
+    }
+    if (parts.length === 0) return '';
+    return `filters: { ${parts.join(', ')} }`;
+  }
+
+  /**
+   * Builds the GraphQL `headers` input fragment for a webhook from a headers object.
+   * Pipefy's `headers` argument is a JSON scalar, so the object is serialized to a
+   * JSON string and embedded (with its quotes escaped) into the mutation.
+   * Returns an empty string when no headers are provided.
+   *
+   * @param headers - Optional HTTP headers Pipefy will send on every webhook request.
+   * @returns A string like `headers: "{\"Authorization\":\"Bearer x\"}"` or `''`.
+   */
+  private buildWebhookHeaders(headers?: Record<string, string>): string {
+    if (!headers || Object.keys(headers).length === 0) return '';
+    const json = JSON.stringify(headers).replace(/"/g, '\\"');
+    return `headers: "${json}"`;
+  }
+
+  /**
+   * Creates a webhook on a pipe or a table.
+   *
+   * Provide `pipe_id` to monitor a pipe or `table_id` to monitor a database table.
+   * See: https://developers.pipefy.com/reference/pipe-table-webhooks
+   *
+   * @param input - The webhook configuration.
+   * @param input.name - A name to identify the webhook.
+   * @param input.url - The endpoint that will receive the webhook payloads.
+   * @param input.actions - Events to subscribe to (e.g. `["card.create", "card.move"]`).
+   * @param input.email - Optional email notified if the webhook fails.
+   * @param input.pipe_id - The pipe to monitor (mutually exclusive with `table_id`).
+   * @param input.table_id - The table to monitor (mutually exclusive with `pipe_id`).
+   * @param input.filters - Optional filters (`field_id` and/or `on_phase_id`).
+   * @param input.headers - Optional HTTP headers Pipefy will send on every webhook
+   *   request (e.g. `{ Authorization: "Bearer <token>" }` for endpoint authentication).
+   * @returns A promise resolving to the created webhook object, or `null` on error.
+   */
+  async createWebhook(input: CreateWebhookInput): Promise<Webhook | null> {
+    const inputParts: string[] = [];
+    inputParts.push(`name: "${input.name.replace(/"/g, '\\"')}"`);
+    inputParts.push(`url: "${input.url}"`);
+    inputParts.push(`actions: [ "${input.actions.join('", "')}" ]`);
+    if (input.email != null) {
+      inputParts.push(`email: "${input.email}"`);
+    }
+    // Pipe IDs are numeric (unquoted); table IDs are alphanumeric (quoted).
+    if (input.pipe_id != null) {
+      inputParts.push(`pipe_id: ${input.pipe_id}`);
+    }
+    if (input.table_id != null) {
+      inputParts.push(`table_id: "${input.table_id}"`);
+    }
+    const filters = this.buildWebhookFilters(input.filters);
+    if (filters) {
+      inputParts.push(filters);
+    }
+    const headers = this.buildWebhookHeaders(input.headers);
+    if (headers) {
+      inputParts.push(headers);
+    }
+
+    const query = `mutation { createWebhook(input: { ${inputParts.join(', ')} }) { webhook { id name url email actions } } }`;
+    const result: any = await (await this.pipefyFetch(query)).json();
+
+    if (result.errors != undefined) {
+      console.log('ERROR: createWebhook: ', result.errors[0].message);
+      return null;
+    }
+    return result.data.createWebhook.webhook;
+  }
+
+  /**
+   * Lists the webhooks configured on a pipe or a table.
+   *
+   * @param id - The ID of the pipe or table.
+   * @param isTable - Set to true to list webhooks of a table instead of a pipe. Defaults to false.
+   * @returns A promise resolving to an array of webhooks, or `null` on error.
+   */
+  async listWebhooks(id: string, isTable: boolean = false): Promise<Webhook[] | null> {
+    const root = isTable ? 'table' : 'pipe';
+    const query = `{ ${root}(id: "${id}") { id name webhooks { id name url email actions headers } } }`;
+    const result: any = await (await this.pipefyFetch(query)).json();
+
+    if (result.errors != undefined) {
+      console.log('ERROR: listWebhooks: ', result.errors[0].message);
+      return null;
+    }
+    return result.data[root].webhooks;
+  }
+
+  /**
+   * Updates an existing webhook. Only the provided fields are changed.
+   *
+   * @param input - The fields to update. `id` is required.
+   * @param input.id - The ID of the webhook to update.
+   * @param input.name - Optional new name.
+   * @param input.url - Optional new endpoint URL.
+   * @param input.actions - Optional new list of subscribed events.
+   * @param input.email - Optional new failure-notification email.
+   * @param input.filters - Optional new filters (`field_id` and/or `on_phase_id`).
+   * @param input.headers - Optional new HTTP headers Pipefy will send on every webhook request.
+   * @returns A promise that resolves to the response of the update operation.
+   */
+  updateWebhook(input: UpdateWebhookInput): Promise<Response> {
+    const inputParts: string[] = [`id: "${input.id}"`];
+    if (input.name != null) {
+      inputParts.push(`name: "${input.name.replace(/"/g, '\\"')}"`);
+    }
+    if (input.url != null) {
+      inputParts.push(`url: "${input.url}"`);
+    }
+    if (input.actions != null) {
+      inputParts.push(`actions: [ "${input.actions.join('", "')}" ]`);
+    }
+    if (input.email != null) {
+      inputParts.push(`email: "${input.email}"`);
+    }
+    const filters = this.buildWebhookFilters(input.filters);
+    if (filters) {
+      inputParts.push(filters);
+    }
+    const headers = this.buildWebhookHeaders(input.headers);
+    if (headers) {
+      inputParts.push(headers);
+    }
+
+    return this.pipefyFetch(
+      `mutation { updateWebhook(input: { ${inputParts.join(', ')} }) { clientMutationId } }`,
+    );
+  }
+
+  /**
+   * Deletes a webhook by its ID.
+   *
+   * @param webhookId - The ID of the webhook to delete.
+   * @returns A promise that resolves to the response of the delete operation.
+   */
+  deleteWebhook(webhookId: string): Promise<Response> {
+    return this.pipefyFetch(
+      `mutation { deleteWebhook(input: { id: "${webhookId}" }) { clientMutationId success } }`,
+    );
+  }
+
+  /**
    * Wraps a field name and value into a specific string format.
    *
    * @param fieldName - The name of the field to wrap.
@@ -931,4 +1126,109 @@ export interface CardRelation {
   name: string;
   id: string;
   cards: Card[];
+}
+
+/**
+ * Represents a pipe as returned by `listPipes`.
+ *
+ * @property {string} id - The unique identifier of the pipe.
+ * @property {string} name - The name of the pipe.
+ */
+export interface Pipe {
+  id: string;
+  name: string;
+}
+
+/**
+ * Represents a database table as returned by `listTables`.
+ *
+ * @property {string} id - The unique identifier of the table.
+ * @property {string} name - The name of the table.
+ */
+export interface Table {
+  id: string;
+  name: string;
+}
+
+/**
+ * Events that a Pipefy webhook can subscribe to.
+ * See: https://developers.pipefy.com/reference/pipe-table-webhooks
+ */
+export type WebhookAction =
+  | 'card.create'
+  | 'card.move'
+  | 'card.field_update'
+  | 'card.delete'
+  | 'card.late'
+  | 'card.overdue'
+  | 'card.expired';
+
+/**
+ * Optional filters that limit when a webhook is triggered.
+ *
+ * @property {Array<string|number>} [field_id] - Only trigger for changes on these field IDs.
+ * @property {Array<string|number>} [on_phase_id] - Only trigger for cards on these phase IDs.
+ */
+export interface WebhookFilters {
+  field_id?: (string | number)[];
+  on_phase_id?: (string | number)[];
+}
+
+/**
+ * Input for creating a webhook on a pipe or a table.
+ *
+ * @property {string} name - A name to identify the webhook.
+ * @property {string} url - The endpoint that will receive the webhook payloads.
+ * @property {WebhookAction[]|string[]} actions - Events to subscribe to.
+ * @property {string} [email] - Email notified if the webhook fails.
+ * @property {string|number} [pipe_id] - The pipe to monitor (mutually exclusive with table_id).
+ * @property {string|number} [table_id] - The table to monitor (mutually exclusive with pipe_id).
+ * @property {WebhookFilters} [filters] - Optional triggering filters.
+ * @property {Record<string,string>} [headers] - Optional HTTP headers Pipefy sends on every
+ *   webhook request (e.g. `{ Authorization: "Bearer <token>" }` for endpoint authentication).
+ */
+export interface CreateWebhookInput {
+  name: string;
+  url: string;
+  actions: WebhookAction[] | string[];
+  email?: string;
+  pipe_id?: string | number;
+  table_id?: string | number;
+  filters?: WebhookFilters;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Input for updating an existing webhook. Only provided fields are changed.
+ *
+ * @property {string} id - The ID of the webhook to update.
+ */
+export interface UpdateWebhookInput {
+  id: string;
+  name?: string;
+  url?: string;
+  actions?: WebhookAction[] | string[];
+  email?: string;
+  filters?: WebhookFilters;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Represents a webhook as returned by the Pipefy API.
+ *
+ * @property {string} id - The unique identifier of the webhook.
+ * @property {string} name - The name of the webhook.
+ * @property {string} url - The endpoint receiving the webhook payloads.
+ * @property {string} [email] - The failure-notification email.
+ * @property {string[]} actions - The events the webhook is subscribed to.
+ * @property {string} [headers] - The configured HTTP headers, as a JSON string
+ *   (e.g. `'{"Authorization":"Bearer x"}'`).
+ */
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  email?: string;
+  actions: string[];
+  headers?: string;
 }

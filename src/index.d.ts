@@ -90,6 +90,22 @@ export declare class PipefyAPI {
   getPipeInfo(pipeId: string): Promise<any>;
 
   /**
+   * Lists the pipes of an organization.
+   *
+   * @param organizationId - The organization to query. Defaults to the one configured in the constructor.
+   * @returns A promise resolving to an array of pipes (`{ id, name }`), or `null` on error.
+   */
+  listPipes(organizationId?: string): Promise<Pipe[] | null>;
+
+  /**
+   * Lists the database tables of an organization.
+   *
+   * @param organizationId - The organization to query. Defaults to the one configured in the constructor.
+   * @returns A promise resolving to an array of tables (`{ id, name }`), or `null` on error.
+   */
+  listTables(organizationId?: string): Promise<Table[] | null>;
+
+  /**
    * Moves a card to a specified phase in Pipefy.
    * @param {string} cardId - The ID of the card to move.
    * @param {string} phaseId - The ID of the destination phase.
@@ -306,6 +322,42 @@ export declare class PipefyAPI {
   sendEmail(emailId: String): Promise<any>;
 
   /**
+   * Creates a webhook on a pipe or a table.
+   *
+   * Provide `pipe_id` to monitor a pipe or `table_id` to monitor a database table.
+   * See: https://developers.pipefy.com/reference/pipe-table-webhooks
+   *
+   * @param input - The webhook configuration (name, url, actions, and pipe_id or table_id).
+   * @returns A promise resolving to the created webhook object, or `null` on error.
+   */
+  createWebhook(input: CreateWebhookInput): Promise<Webhook | null>;
+
+  /**
+   * Lists the webhooks configured on a pipe or a table.
+   *
+   * @param id - The ID of the pipe or table.
+   * @param isTable - Set to true to list webhooks of a table instead of a pipe. Defaults to false.
+   * @returns A promise resolving to an array of webhooks, or `null` on error.
+   */
+  listWebhooks(id: string, isTable?: boolean): Promise<Webhook[] | null>;
+
+  /**
+   * Updates an existing webhook. Only the provided fields are changed.
+   *
+   * @param input - The fields to update. `id` is required.
+   * @returns A promise that resolves to the response of the update operation.
+   */
+  updateWebhook(input: UpdateWebhookInput): Promise<Response>;
+
+  /**
+   * Deletes a webhook by its ID.
+   *
+   * @param webhookId - The ID of the webhook to delete.
+   * @returns A promise that resolves to the response of the delete operation.
+   */
+  deleteWebhook(webhookId: string): Promise<Response>;
+
+  /**
    * Creates a new card in a specified pipe in Pipefy.
    * @param pipeId The ID of the pipe where the card will be created.
    * @param dataArray An array containing the data to be set in the new card's fields.
@@ -480,4 +532,109 @@ export interface CardRelation {
   name: string;
   id: string;
   cards: Card[];
+}
+
+/**
+ * Represents a pipe as returned by `listPipes`.
+ *
+ * @property {string} id - The unique identifier of the pipe.
+ * @property {string} name - The name of the pipe.
+ */
+export interface Pipe {
+  id: string;
+  name: string;
+}
+
+/**
+ * Represents a database table as returned by `listTables`.
+ *
+ * @property {string} id - The unique identifier of the table.
+ * @property {string} name - The name of the table.
+ */
+export interface Table {
+  id: string;
+  name: string;
+}
+
+/**
+ * Events that a Pipefy webhook can subscribe to.
+ * See: https://developers.pipefy.com/reference/pipe-table-webhooks
+ */
+export type WebhookAction =
+  | 'card.create'
+  | 'card.move'
+  | 'card.field_update'
+  | 'card.delete'
+  | 'card.late'
+  | 'card.overdue'
+  | 'card.expired';
+
+/**
+ * Optional filters that limit when a webhook is triggered.
+ *
+ * @property {Array<string|number>} [field_id] - Only trigger for changes on these field IDs.
+ * @property {Array<string|number>} [on_phase_id] - Only trigger for cards on these phase IDs.
+ */
+export interface WebhookFilters {
+  field_id?: (string | number)[];
+  on_phase_id?: (string | number)[];
+}
+
+/**
+ * Input for creating a webhook on a pipe or a table.
+ *
+ * @property {string} name - A name to identify the webhook.
+ * @property {string} url - The endpoint that will receive the webhook payloads.
+ * @property {WebhookAction[]|string[]} actions - Events to subscribe to.
+ * @property {string} [email] - Email notified if the webhook fails.
+ * @property {string|number} [pipe_id] - The pipe to monitor (mutually exclusive with table_id).
+ * @property {string|number} [table_id] - The table to monitor (mutually exclusive with pipe_id).
+ * @property {WebhookFilters} [filters] - Optional triggering filters.
+ * @property {Record<string,string>} [headers] - Optional HTTP headers Pipefy sends on every
+ *   webhook request (e.g. `{ Authorization: "Bearer <token>" }` for endpoint authentication).
+ */
+export interface CreateWebhookInput {
+  name: string;
+  url: string;
+  actions: WebhookAction[] | string[];
+  email?: string;
+  pipe_id?: string | number;
+  table_id?: string | number;
+  filters?: WebhookFilters;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Input for updating an existing webhook. Only provided fields are changed.
+ *
+ * @property {string} id - The ID of the webhook to update.
+ */
+export interface UpdateWebhookInput {
+  id: string;
+  name?: string;
+  url?: string;
+  actions?: WebhookAction[] | string[];
+  email?: string;
+  filters?: WebhookFilters;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Represents a webhook as returned by the Pipefy API.
+ *
+ * @property {string} id - The unique identifier of the webhook.
+ * @property {string} name - The name of the webhook.
+ * @property {string} url - The endpoint receiving the webhook payloads.
+ * @property {string} [email] - The failure-notification email.
+ * @property {string[]} actions - The events the webhook is subscribed to.
+ * @property {string} [headers] - The configured HTTP headers, as a JSON string
+ *   (e.g. `'{"Authorization":"Bearer x"}'`).
+ */
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  email?: string;
+  actions: string[];
+  headers?: string;
 }

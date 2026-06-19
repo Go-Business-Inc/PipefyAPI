@@ -68,6 +68,10 @@ _(Note: Internally, the library handles the detection and mapping of these param
   - Retrieves detailed information about a card, including parent/child relations and custom fields.
 - **getPipeInfo(pipeId: string): Promise<any>**
   - Retrieves basic information about a pipe by its ID.
+- **listPipes(organizationId?: string): Promise<Pipe[] | null>**
+  - Lists the pipes of an organization (defaults to the configured `organizationId`).
+- **listTables(organizationId?: string): Promise<Table[] | null>**
+  - Lists the database tables of an organization (defaults to the configured `organizationId`).
 - **moveCardToPhase(cardId: string, phaseId: string): Promise<any>**
   - Moves a card to a specific phase within a pipe.
 - **allCardsIds(pipeId: string, parents?: boolean, children?: boolean): Promise<any | null>**
@@ -128,6 +132,14 @@ _(Note: Internally, the library handles the detection and mapping of these param
   - Uploads a file to Pipefy from an external URL.
 - **uploadFileFromBuffer(fileName: string, fileData: any): Promise<string | null>**
   - Uploads a file to Pipefy from a data buffer.
+- **createWebhook(input: CreateWebhookInput): Promise<Webhook | null>**
+  - Creates a webhook on a pipe (`pipe_id`) or a table (`table_id`).
+- **listWebhooks(id: string, isTable?: boolean): Promise<Webhook[] | null>**
+  - Lists the webhooks configured on a pipe or a table.
+- **updateWebhook(input: UpdateWebhookInput): Promise<Response>**
+  - Updates an existing webhook (only the provided fields are changed).
+- **deleteWebhook(webhookId: string): Promise<Response>**
+  - Deletes a webhook by its ID.
 
 ### Exported Types
 
@@ -135,8 +147,61 @@ _(Note: Internally, the library handles the detection and mapping of these param
 - `saTokenObject`: Service Account Token response format.
 - `Card`: Represents a Pipefy card.
 - `CardRelation`: Relation between cards.
+- `Pipe`: Represents a pipe (`id`, `name`) as returned by `listPipes`.
+- `Table`: Represents a database table (`id`, `name`) as returned by `listTables`.
+- `WebhookAction`: Allowed webhook events (`card.create`, `card.move`, `card.field_update`, `card.delete`, `card.late`, `card.overdue`, `card.expired`).
+- `WebhookFilters`: Optional `field_id` / `on_phase_id` filters for a webhook.
+- `CreateWebhookInput`: Input for `createWebhook`.
+- `UpdateWebhookInput`: Input for `updateWebhook`.
+- `Webhook`: Represents a webhook returned by the API.
 
-These functions and types cover operations for managing cards, relations, comments, users, due dates, table records, and file handling in Pipefy.
+These functions and types cover operations for managing cards, relations, comments, users, due dates, table records, file handling, and webhooks in Pipefy.
+
+### Webhooks
+
+Webhooks let Pipefy notify an external endpoint when something happens on a pipe or a table.
+Supported events: `card.create`, `card.move`, `card.field_update`, `card.delete`, `card.late`, `card.overdue`, `card.expired`.
+Reference: [Pipe & Table Webhooks](https://developers.pipefy.com/reference/pipe-table-webhooks).
+
+```typescript
+// Create a webhook on a pipe
+const webhook = await pipefy.createWebhook({
+  name: 'Dispatcher',
+  url: 'https://your-endpoint.example.com/hook',
+  actions: ['card.create', 'card.move'],
+  email: 'you@example.com', // optional: notified if the webhook fails
+  pipe_id: 307062317,
+  // Optional filters:
+  // filters: { field_id: [1222, 34343], on_phase_id: [123] },
+  // Optional headers Pipefy sends on every request (e.g. to authenticate your endpoint):
+  headers: { Authorization: 'Bearer YOUR_SECRET_TOKEN' },
+});
+console.log(webhook); // { id, name, url, email, actions }
+
+// Create a webhook on a table (use table_id instead of pipe_id)
+await pipefy.createWebhook({
+  name: 'Table sync',
+  url: 'https://your-endpoint.example.com/hook',
+  actions: ['card.create'],
+  table_id: 'aBcD1234',
+});
+
+// List webhooks of a pipe (pass true as the 2nd arg for tables)
+const pipeWebhooks = await pipefy.listWebhooks('307062317');
+const tableWebhooks = await pipefy.listWebhooks('aBcD1234', true);
+
+// Update a webhook (only the provided fields change)
+await pipefy.updateWebhook({
+  id: '300447638',
+  actions: ['card.create', 'card.move'],
+  name: 'Dispatcher',
+  url: 'https://your-endpoint.example.com/hook',
+  email: 'you@example.com',
+});
+
+// Delete a webhook
+await pipefy.deleteWebhook('300671373');
+```
 
 ## Usage
 
