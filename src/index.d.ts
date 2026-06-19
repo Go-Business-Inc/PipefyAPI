@@ -406,6 +406,13 @@ export declare class PipefyAPI {
   pipefyFetch(query: string, method?: string): Promise<Response>;
 
   /**
+   * Retrieves the current tracking service account token object if initialized as a service account.
+   *
+   * @returns {saTokenObject | null} The resolved token info or null if using personal tokens/not authorized.
+   */
+  getTokenObject(): saTokenObject | null;
+
+  /**
    * Retrieves an access token using a Service Account's credentials.
    *
    * @param clientId - The Client ID of the service account.
