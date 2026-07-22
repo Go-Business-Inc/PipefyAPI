@@ -141,7 +141,7 @@ export class PipefyAPI {
       parentsQuery = `parent_relations { name id cards { id title current_phase { id name } ${options.second_level ? `parent_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value ? 'date_value' : ''} ${options.datetime_value ? 'datetime_value' : ''} } } } child_relations { name id cards { id title current_phase { id name } fields { indexName name value report_value ${options.date_value ? 'date_value' : ''} ${options.datetime_value ? 'datetime_value' : ''} } } }` : ``}  fields { indexName name value report_value ${options.date_value ? 'date_value' : ''} ${options.datetime_value ? 'datetime_value' : ''} } } }`;
     }
     return this.pipefyFetch(
-      `{ card(id: "${cardId}") { id pipe {id name suid} title assignees { id name } createdAt createdBy{ id name email createdAt } ${childenQuery} ${parentsQuery} comments_count current_phase { name id } done due_date fields { indexName name value report_value ${options.date_value ? 'date_value' : ''} ${options.datetime_value ? 'datetime_value' : ''} } labels { id name } phases_history { phase { name  id } firstTimeIn lastTimeOut } url } }`,
+      `{ card(id: "${cardId}") { id pipe {id name suid} title assignees { id name email username } createdAt createdBy{ id name email createdAt } ${childenQuery} ${parentsQuery} comments_count current_phase { name id } done due_date fields { indexName name value report_value ${options.date_value ? 'date_value' : ''} ${options.datetime_value ? 'datetime_value' : ''} } labels { id name } phases_history { phase { name  id } firstTimeIn lastTimeOut } url } }`,
     );
   }
 
