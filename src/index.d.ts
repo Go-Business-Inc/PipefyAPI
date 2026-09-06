@@ -224,6 +224,20 @@ export declare class PipefyAPI {
   setDueDate(cardId: string, dueDate: string): Promise<Response>;
 
   /**
+   * Sets (renames) the title of a card via `updateCard`.
+   *
+   * Note: Pipefy has no `setCardTitle` mutation — the title is changed through
+   * `updateCard`. The new title is sent as a GraphQL variable, so quotes,
+   * backslashes and newlines can never break the mutation. Unlike `createCard`,
+   * this overrides the title even on pipes whose title is derived from a field.
+   *
+   * @param cardId The ID of the card to rename.
+   * @param title The new title.
+   * @returns A promise that resolves to the response of the update operation.
+   */
+  setCardTitle(cardId: string, title: string): Promise<Response>;
+
+  /**
    * Finds a record in a specified table based on a field value.
    * @param taleId The ID of the table in which to search for the record.
    * @param fieldId The ID of the field to search within the table.
@@ -362,9 +376,11 @@ export declare class PipefyAPI {
    * @param pipeId The ID of the pipe where the card will be created.
    * @param dataArray An array containing the data to be set in the new card's fields.
    * @param reportError Determines whether to report errors encountered during card creation (default is false).
+   * @param title Optional card title. Pipefy only honors it when the pipe uses manual
+   *   titles; if the pipe derives the title from a field, this value is ignored (no error).
    * @returns A Promise that resolves with the created card's ID if successful, or null if there was an error.
    */
-  createCard(pipeId: string, dataArray: any, reportError?: boolean): Promise<any>;
+  createCard(pipeId: string, dataArray: any, reportError?: boolean, title?: string): Promise<any>;
 
   /**
    * Generates a pre-signed URL for uploading a file to Pipefy.
@@ -452,10 +468,19 @@ export declare class PipefyAPI {
    * Makes a fetch request to the Pipefy API with the given GraphQL query.
    *
    * @param query - The GraphQL query string to be sent in the request body.
+   * @param variables - Optional GraphQL variables sent alongside the query. Passing
+   *   them lets callers send user input as data instead of interpolating it into the
+   *   query, avoiding GraphQL injection and breakage from quotes/newlines. For
+   *   backward compatibility, if a string is passed it is treated as the HTTP method
+   *   (the previous `pipefyFetch(query, method)` signature).
    * @param method - Optional. The HTTP method to use for the request (defaults to `'POST'`).
    * @returns A promise that resolves to the `Response` object returned by the fetch call.
    */
-  pipefyFetch(query: string, method?: string): Promise<Response>;
+  pipefyFetch(
+    query: string,
+    variables?: Record<string, any> | string | null,
+    method?: string,
+  ): Promise<Response>;
 
   /**
    * Retrieves the current tracking service account token object if initialized as a service account.
@@ -470,13 +495,14 @@ export declare class PipefyAPI {
    * @param clientId - The Client ID of the service account.
    * @param clientSecret - The Client Secret of the service account.
    * @param tokenEndpoint - The endpoint to request the token from.
+   *   Defaults to `https://app.pipefy.com/oauth/token`.
    * @returns A promise that resolves to the token response object.
    * @throws Will throw an error if the request fails.
    */
   getServiceAccountToken(
     clientId: string,
     clientSecret: string,
-    tokenEndpoint: string,
+    tokenEndpoint?: string,
   ): Promise<saTokenObject>;
 }
 

@@ -126,6 +126,25 @@ export class PipefyAPI {
     return this.currentToken!;
   }
 
+  /**
+   * Escapes an arbitrary value so it can be safely embedded as a GraphQL string
+   * literal inside a query built by concatenation.
+   *
+   * `JSON.stringify` produces a valid GraphQL string literal: it wraps the value
+   * in double quotes and escapes the characters that would otherwise break the
+   * query or allow GraphQL injection — double quotes (`"`), backslashes (`\`),
+   * newlines, tabs and other control characters.
+   *
+   * The returned string **includes** the surrounding quotes, so callers must not
+   * add their own. `null`/`undefined` become an empty string literal (`""`).
+   *
+   * @param value - The value to escape (coerced to string).
+   * @returns A quoted, fully-escaped GraphQL string literal.
+   */
+  private escapeGqlString(value: any): string {
+    return JSON.stringify(String(value ?? ''));
+  }
+
   getCardInfo(
     cardId: string,
     children = false,
@@ -219,7 +238,7 @@ export class PipefyAPI {
   async findCardFromTitle(title: string, pipeId: string): Promise<any | null> {
     const search: any = await (
       await this.pipefyFetch(
-        `{ cards(pipe_id: "${pipeId}", search: {title: "${title}"}) { edges { node { id } } } } `,
+        `{ cards(pipe_id: "${pipeId}", search: {title: ${this.escapeGqlString(title)}}) { edges { node { id } } } } `,
       )
     ).json();
     if (search.data.cards.edges.length > 0) {
@@ -240,7 +259,7 @@ export class PipefyAPI {
     if (cards) {
       cardfields = 'fields { indexName name value report_value } current_phase { name id }';
     }
-    const query = `{ findCards( pipeId: ${pipeId} search: {fieldId: "${field}", fieldValue: "${value}"} ) { edges { node { id ${cardfields} } } } } `;
+    const query = `{ findCards( pipeId: ${pipeId} search: {fieldId: ${this.escapeGqlString(field)}, fieldValue: ${this.escapeGqlString(value)}} ) { edges { node { id ${cardfields} } } } } `;
     //console.log(query)
     const search: any = await (await this.pipefyFetch(query)).json();
     //console.log(`SEARCH: '${title}'`, search)
@@ -261,8 +280,11 @@ export class PipefyAPI {
   }
 
   makeComment(cardId: string, text: string): Promise<Response> {
+    // The comment text is sent as a GraphQL variable so quotes, backslashes and
+    // newlines in the text can never break the mutation or inject GraphQL.
     return this.pipefyFetch(
-      `mutation{ createComment(input:{ card_id: "${cardId}", text: "${text.replace(/"/g, '\\"')}" }) { clientMutationId } }`,
+      `mutation($text: String!) { createComment(input: { card_id: ${this.escapeGqlString(cardId)}, text: $text }) { clientMutationId } }`,
+      { text: String(text ?? '') },
     );
   }
 
@@ -273,9 +295,9 @@ export class PipefyAPI {
     valueIsArray = false,
     operation: string | null = null,
   ): Promise<Response> {
-    let valueTosend = `"${typeof value === 'string' ? value.replace(/"/g, '\\"') : value}"`;
+    let valueTosend = this.escapeGqlString(value);
     if (valueIsArray || Array.isArray(value)) {
-      valueTosend = `[ "${value.join('", "')}" ]`;
+      valueTosend = `[ ${(value as any[]).map((v) => this.escapeGqlString(v)).join(', ')} ]`;
     }
     let op = ``;
     if (operation != null && operation != undefined) {
@@ -301,18 +323,20 @@ export class PipefyAPI {
       if (Array.isArray(fieldsToUpdate[field])) {
         if (fieldsToUpdate[field].length > 0) {
           fieldArray.push(
-            `{fieldId: "${field}", value: [ "${fieldsToUpdate[field].join('", "')}" ] }`,
+            `{fieldId: ${this.escapeGqlString(field)}, value: [ ${fieldsToUpdate[field]
+              .map((v: any) => this.escapeGqlString(v))
+              .join(', ')} ] }`,
           );
           //console.log("FIELD SKIPPED:",field)
         }
       } else {
-        if (fieldsToUpdate[field] != null || fieldsToUpdate[field] != undefined) {
+        if (fieldsToUpdate[field] != null && fieldsToUpdate[field] != undefined) {
           fieldArray.push(
-            `{fieldId: "${field}", value: "${typeof fieldsToUpdate[field] === 'string' ? fieldsToUpdate[field].replace(/"/g, '\\"') : fieldsToUpdate[field]}" }`,
+            `{fieldId: ${this.escapeGqlString(field)}, value: ${this.escapeGqlString(fieldsToUpdate[field])} }`,
           );
-        } else if (fieldsToUpdate[field] == null) {
-          fieldArray.push(`{fieldId: "${field}", value: null }`);
-        } else if (fieldsToUpdate[field] == undefined) {
+        } else if (fieldsToUpdate[field] === null) {
+          fieldArray.push(`{fieldId: ${this.escapeGqlString(field)}, value: null }`);
+        } else if (fieldsToUpdate[field] === undefined) {
           //console.log("FIELD SKIPPED:",field)
         }
       }
@@ -347,15 +371,35 @@ export class PipefyAPI {
     );
   }
 
+  /**
+   * Sets (renames) the title of a card via `updateCard`.
+   *
+   * Note: there is no `setCardTitle` mutation in Pipefy — the title is changed
+   * through `updateCard`. The new title is sent as a GraphQL variable so quotes,
+   * backslashes and newlines can never break the mutation or inject GraphQL.
+   * Unlike `createCard`, this overrides the title even on pipes whose title is
+   * derived from a field.
+   *
+   * @param cardId - The ID of the card to rename.
+   * @param title - The new title.
+   * @returns A promise that resolves to the response of the update operation.
+   */
+  setCardTitle(cardId: string, title: string): Promise<Response> {
+    return this.pipefyFetch(
+      `mutation($title: String) { updateCard(input: {id: ${this.escapeGqlString(cardId)}, title: $title}) { clientMutationId card { id title } } }`,
+      { title: String(title ?? '') },
+    );
+  }
+
   async findRecordInTable(
     taleId: string,
     fieldId: string,
     value: string,
     fullData = false,
   ): Promise<any | null> {
-    let query = `{ findRecords(tableId: "${taleId}", search: {fieldId: "${fieldId}", fieldValue: "${value}"}) { edges { node { id } } } }`;
+    let query = `{ findRecords(tableId: "${taleId}", search: {fieldId: ${this.escapeGqlString(fieldId)}, fieldValue: ${this.escapeGqlString(value)}}) { edges { node { id } } } }`;
     if (fullData) {
-      query = `{ findRecords(tableId: "${taleId}", search: {fieldId: "${fieldId}", fieldValue: "${value}"}) { edges { node { id fields { indexName name report_value value } } } } }`;
+      query = `{ findRecords(tableId: "${taleId}", search: {fieldId: ${this.escapeGqlString(fieldId)}, fieldValue: ${this.escapeGqlString(value)}}) { edges { node { id fields { indexName name report_value value } } } } }`;
     }
     const search: any = await (await this.pipefyFetch(query)).json();
     if (search.data.findRecords.edges != undefined && search.data.findRecords.edges.length > 0) {
@@ -389,7 +433,7 @@ export class PipefyAPI {
     let fields_attributes: any[] = [];
     for (let i = 0; i < data.length; i++) {
       fields_attributes.push(
-        `{field_id: "${data[i].id}", field_value: "${this.stringClearSpecialChars(data[i].value)}"}`,
+        `{field_id: ${this.escapeGqlString(data[i].id)}, field_value: ${this.escapeGqlString(data[i].value)}}`,
       );
     }
 
@@ -784,10 +828,12 @@ export class PipefyAPI {
    */
   private wrapField(fieldName: string, value: any): string | null {
     if (Array.isArray(value)) {
-      return `{ field_id: "${fieldName}", field_value: [ "${value.join('", "')}" ] }`;
+      return `{ field_id: ${this.escapeGqlString(fieldName)}, field_value: [ ${value
+        .map((v) => this.escapeGqlString(v))
+        .join(', ')} ] }`;
     } else {
-      if (value != null || value != undefined) {
-        return `{ field_id: "${fieldName}", field_value: "${typeof value === 'string' ? value.replace(/"/g, '\\"') : value}" }`;
+      if (value != null && value != undefined) {
+        return `{ field_id: ${this.escapeGqlString(fieldName)}, field_value: ${this.escapeGqlString(value)} }`;
       } else {
         // console.log("FIELD SKIPPED:",fieldName)
         return null;
@@ -795,41 +841,54 @@ export class PipefyAPI {
     }
   }
 
-  async createCard(pipeID: string, dataArray: any, reportError = false): Promise<any> {
-    let dataToWrite: any[] = [];
+  async createCard(
+    pipeID: string,
+    dataArray: any,
+    reportError = false,
+    title?: string,
+  ): Promise<any> {
+    // Build the fields_attributes as data and send it through GraphQL variables
+    // instead of interpolating it into the query string. This prevents GraphQL
+    // injection and the broken mutations caused by quotes, backslashes or
+    // newlines in field values (see wrapField for the legacy string-building path).
+    const fieldsAttributes: { field_id: string; field_value: any }[] = [];
+    const pushField = (fieldId: string, fieldValue: any) => {
+      if (fieldValue === null || fieldValue === undefined) return;
+      fieldsAttributes.push({ field_id: fieldId, field_value: fieldValue });
+    };
     if (Array.isArray(dataArray)) {
       // Si es Array
       for (let i = 0; i < dataArray.length; i++) {
-        const wrappedField = this.wrapField(dataArray[i].field_id, dataArray[i].field_value);
-        if (wrappedField) dataToWrite.push(wrappedField);
+        pushField(dataArray[i].field_id, dataArray[i].field_value);
       }
     } else {
       // Si es objeto
       for (let param in dataArray) {
-        const wrappedField = this.wrapField(param, dataArray[param]);
-        if (wrappedField) dataToWrite.push(wrappedField);
+        pushField(param, dataArray[param]);
       }
     }
 
-    const query = `
-    mutation{
-        createCard(input:{
-          pipe_id: ${pipeID},
-          fields_attributes: [
-            ${dataToWrite.join(', ')}
-          ],
-          }) {
-          clientMutationId
-          card {
-            id
-          }
+    const query = `mutation CreateCard($input: CreateCardInput!) {
+      createCard(input: $input) {
+        clientMutationId
+        card {
+          id
         }
       }
-      `;
-    //console.log(query)
+    }`;
+    // Note: Pipefy only honors `title` when the pipe uses manual titles. If the
+    // pipe derives the card title from a field, this value is ignored (no error).
+    const input: { pipe_id: string; fields_attributes: any[]; title?: string } = {
+      pipe_id: pipeID,
+      fields_attributes: fieldsAttributes,
+    };
+    if (title != null) {
+      input.title = title;
+    }
+    const variables = { input };
 
     // send query
-    const resultPipefy: any = await (await this.pipefyFetch(query)).json();
+    const resultPipefy: any = await (await this.pipefyFetch(query, variables)).json();
     //console.log('Result: ',resultPipefy)
     //console.log('errors:', resultPipefy.errors[0].message)
 
@@ -992,19 +1051,40 @@ export class PipefyAPI {
    * Makes a fetch request to the Pipefy API with the given GraphQL query.
    *
    * @param query - The GraphQL query to be sent in the request body.
+   * @param variables - Optional GraphQL variables. Passing them lets callers send
+   *   user input as data instead of interpolating it into the query, which avoids
+   *   GraphQL injection and breakage from quotes/newlines. For backward
+   *   compatibility, if this argument is a string it is treated as the HTTP method
+   *   (the previous `pipefyFetch(query, method)` signature).
    * @param method - The HTTP method to be used for the request (default is 'POST').
    * @returns A promise that resolves to the response of the fetch request.
    */
-  async pipefyFetch(query: string, method: string = 'POST'): Promise<Response> {
+  async pipefyFetch(
+    query: string,
+    variables: Record<string, any> | string | null = null,
+    method: string = 'POST',
+  ): Promise<Response> {
+    // Backward compatibility: the old signature was `pipefyFetch(query, method)`.
+    let vars: Record<string, any> | null = null;
+    if (typeof variables === 'string') {
+      method = variables;
+    } else if (variables) {
+      vars = variables;
+    }
+
     const token = await this.ensureValidToken();
     const tokenType = this.tokenType || 'Bearer';
+    const body: { query: string; variables?: Record<string, any> } = { query };
+    if (vars) {
+      body.variables = vars;
+    }
     const options = {
       method: method,
       headers: {
         Authorization: `${tokenType} ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query: query }),
+      body: JSON.stringify(body),
     };
 
     const response = await fetch(this.endpoint, options);
