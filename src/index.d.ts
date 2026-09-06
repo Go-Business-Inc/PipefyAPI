@@ -495,13 +495,14 @@ export declare class PipefyAPI {
    * @param clientId - The Client ID of the service account.
    * @param clientSecret - The Client Secret of the service account.
    * @param tokenEndpoint - The endpoint to request the token from.
+   *   Defaults to `https://app.pipefy.com/oauth/token`.
    * @returns A promise that resolves to the token response object.
    * @throws Will throw an error if the request fails.
    */
   getServiceAccountToken(
     clientId: string,
     clientSecret: string,
-    tokenEndpoint: string,
+    tokenEndpoint?: string,
   ): Promise<saTokenObject>;
 }
 
