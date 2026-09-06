@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "tsc && tsc -p tsconfig.types.json",
+    "typecheck": "tsc -p tsconfig.test.json",
     "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'"
   },

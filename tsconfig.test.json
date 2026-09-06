@@ -1,0 +1,12 @@
+{
+  // Type-checks the tests together with the source, without emitting anything.
+  // The build config (tsconfig.json) deliberately excludes tests: they sit
+  // outside rootDir ("src"), so compiling them there fails with TS6059.
+  // Run with: npm run typecheck
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["./src/**/*.ts", "./tests/**/*.ts"]
+}

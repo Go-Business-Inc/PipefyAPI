@@ -14,6 +14,9 @@
     "lib": ["ESNext", "DOM"],
     "ignoreDeprecations": "5.0"
   },
-  "include": ["./src/**/*.ts", "./tests/**/*.ts"],
+  // Build config: only the shipped source. Tests live outside rootDir ("src"),
+  // so including them here would break the build with TS6059 as soon as one
+  // exists. Type-check tests with tsconfig.test.json (npm run typecheck).
+  "include": ["./src/**/*.ts"],
   "exclude": ["./node_modules"]
 }
