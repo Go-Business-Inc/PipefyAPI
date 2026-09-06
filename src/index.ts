@@ -411,8 +411,8 @@ export class PipefyAPI {
     // fieldsToUpdate debe ser un objeto del tipo { field1: value1, field2: value2, ... }
     // por cada objeto se debe buscar el nombre y valor para colocar en el formato
     // {fieldId: "${name}", value: "${value}" },
-    let fieldArray: any[] = [];
-    for (let field in fieldsToUpdate) {
+    const fieldArray: any[] = [];
+    for (const field in fieldsToUpdate) {
       if (Array.isArray(fieldsToUpdate[field])) {
         if (fieldsToUpdate[field].length > 0) {
           fieldArray.push(
@@ -556,7 +556,7 @@ export class PipefyAPI {
    * @returns The ID of the newly created record if successful, otherwise returns null.
    */
   async createTableRecord(tableId: string, data: any[] = []): Promise<any | null> {
-    let fields_attributes: any[] = [];
+    const fields_attributes: any[] = [];
     for (let i = 0; i < data.length; i++) {
       fields_attributes.push(
         `{field_id: ${this.escapeGqlString(data[i].id)}, field_value: ${this.escapeGqlString(data[i].value)}}`,
@@ -653,7 +653,7 @@ export class PipefyAPI {
     }
     const indexedFields: any = {};
     for (const item of fields) {
-      const { indexName, name, value, report_value, ...rest } = item;
+      const { indexName, name, value } = item;
       const type = typeof value === 'number' ? 'number' : 'string';
       const index = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
       if (full) {
@@ -741,11 +741,12 @@ export class PipefyAPI {
     let recordCount = 0;
     const recodrs: any = await (await this.listTableRecords(tableId)).json();
     if (recodrs.data.table_records.edges != undefined) {
-      let promises: any[] = [];
+      const promises: any[] = [];
       for (let i = 0; i < recodrs.data.table_records.edges.length; i++) {
         promises.push(this.deleteTablerecord(recodrs.data.table_records.edges[i].node.id));
       }
       const result = await Promise.all(promises);
+      recordCount += result.length;
     }
     return `Deleted ${recordCount} recodrs in table ${tableId}`;
   }
@@ -775,7 +776,7 @@ export class PipefyAPI {
     do {
       const allCards: any = await this.allCardsIds(pipeId);
       if (allCards != null) {
-        let promises: any[] = [];
+        const promises: any[] = [];
         for (let i = 0; i < allCards.nodes.length; i++) {
           promises.push(this.deleteCard(allCards.nodes[i].id));
         }
@@ -1046,7 +1047,7 @@ export class PipefyAPI {
       }
     } else {
       // Si es objeto
-      for (let param in dataArray) {
+      for (const param in dataArray) {
         pushField(param, dataArray[param]);
       }
     }
@@ -1103,11 +1104,6 @@ export class PipefyAPI {
       const pathSegments = urlObj.pathname.split('/');
       const lastSegment = pathSegments[pathSegments.length - 1];
       const decodedFileName = decodeURIComponent(lastSegment);
-      const fileNameParts = decodedFileName.split('.');
-      // Si necesitas la extensión del archivo
-      //const fileName = fileNameParts[0]; // Nombre del archivo sin extensión
-      //const fileExtension = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : ''; // Extensión del archivo
-
       return decodedFileName;
     } catch (error) {
       console.error('Error parsing the URL:', error);
@@ -1121,7 +1117,7 @@ export class PipefyAPI {
    * @returns A Promise that resolves with the pre-signed URL if successful, or null if there was an error.
    */
   getPreSignedURL(fileName: string): Promise<Response> {
-    let query = `mutation {
+    const query = `mutation {
       createPresignedUrl(input: { organizationId: ${this.organizationId}, fileName: "${fileName}" }){
         clientMutationId
         url
@@ -1293,7 +1289,10 @@ export class PipefyAPI {
       try {
         const errText = await response.clone().text();
         console.error(`[PipefyAPI] Response body: ${errText}`);
-      } catch (e) {}
+      } catch {
+        // Best effort: the status line above is already logged, and the body may
+        // be unreadable (already consumed, or not text). Nothing else to do.
+      }
     }
 
     return response;
