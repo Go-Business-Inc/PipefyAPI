@@ -1,0 +1,12 @@
+{
+  // Emits dist/index.d.ts from src/index.ts.
+  // Kept separate from tsconfig.json so the JavaScript output can stay stripped of
+  // comments (removeComments: true) while the type declarations keep their JSDoc,
+  // which is what powers IntelliSense for consumers of the package.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "removeComments": false
+  }
+}

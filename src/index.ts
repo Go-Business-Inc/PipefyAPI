@@ -25,6 +25,16 @@ export interface saTokenObject {
   created_at: number;
 }
 
+/**
+ * Represents a PipefyClient instance.
+ * @constructor
+ * @param {string|PipefyConfig} configOrApiKey - The API key for accessing Pipefy, or a configuration object.
+ * @param {string} [organizationId] - The ID of the organization in Pipefy (required if using legacy api key).
+ * @param {string} [timeZone] - The time zone for date/time operations. Check: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+ * @param {string} [intlCode] - The international code for language settings. Check: https://www.andiamo.co.uk/resources/iso-language-codes/
+ * @param {string} [logTable] - The ID of the log table in Pipefy.
+ * @param {string} [endpoint] - (Optional) The endpoint for GraphQL.
+ */
 export class PipefyAPI {
   private config: PipefyConfig;
   private currentToken: string | null;
@@ -145,6 +155,18 @@ export class PipefyAPI {
     return JSON.stringify(String(value ?? ''));
   }
 
+  /**
+   * Retrieves detailed information about a specific card from the Pipefy API.
+   *
+   * @param cardId - The unique identifier of the card to retrieve information for.
+   * @param children - Whether to include information about child relations of the card. Defaults to false.
+   * @param parents - Whether to include information about parent relations of the card. Defaults to false.
+   * @param options - Additional options to customize the query.
+   * @param options.second_level - Whether to include second-level relations in the query. Defaults to false.
+   * @param options.date_value - Whether to include date values in the fields. Defaults to false.
+   * @param options.datetime_value - Whether to include datetime values in the fields. Defaults to false.
+   * @returns A promise that resolves to the card information retrieved from the Pipefy API.
+   */
   getCardInfo(
     cardId: string,
     children = false,
@@ -164,6 +186,12 @@ export class PipefyAPI {
     );
   }
 
+  /**
+   * Retrieves information about a specific pipe from the Pipefy API.
+   *
+   * @param pipeId - The unique identifier of the pipe to retrieve information for.
+   * @returns A promise that resolves to the pipe information, including its id and name.
+   */
   getPipeInfo(pipeId: string): Promise<any> {
     return this.pipefyFetch(`{ pipe(id: "${pipeId}") { id name } }`);
   }
@@ -204,12 +232,26 @@ export class PipefyAPI {
     return result.data.organization.tables.edges.map((edge: any) => edge.node);
   }
 
+  /**
+   * Moves a card to a specified phase in Pipefy.
+   * @param {string} cardId - The ID of the card to move.
+   * @param {string} phaseId - The ID of the destination phase.
+   * @returns {Promise<any>} A promise that resolves when the card is successfully moved to the specified phase.
+   */
   moveCardToPhase(cardId: string, phaseId: string): Promise<any> {
     return this.pipefyFetch(
       `mutation{ moveCardToPhase(input:{ card_id: ${cardId}, destination_phase_id: ${phaseId} }) { clientMutationId } }`,
     );
   }
 
+  /**
+   * Finds all card from specified pipe.
+   *
+   * @param pipeId - The ID of the pipe where the card is located.
+   * @param children - Whether to include information about child relations of the card. Defaults to false.
+   * @param parents - Whether to include information about parent relations of the card. Defaults to false.
+   * @returns A promise that resolves a list of cards.
+   */
   async allCardsIds(
     pipeId: string,
     parents: boolean = false,
@@ -235,6 +277,12 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Finds a card by its title within a specified pipe in Pipefy.
+   * @param {string} title - The title of the card to search for.
+   * @param {string} pipeId - The ID of the pipe in which to search for the card.
+   * @returns {Promise<string | null>} A promise that resolves with the ID of the found card, or null if not found.
+   */
   async findCardFromTitle(title: string, pipeId: string): Promise<any | null> {
     const search: any = await (
       await this.pipefyFetch(
@@ -248,11 +296,25 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Look for a card with a particular field value in a Pipe.
+   *
+   * @param {string} field - The name of the field to search.
+   * @param {string} value - The value to search for in the specified field.
+   * @param {string} pipeId - The ID of the Pipe in which to search for the card.
+   * @param {boolean} [first=true] - If true, returns only the first matching card. Defaults to true.
+   * @param {boolean} [cards=false] - If true, includes card fields in the result. Defaults to false.
+   *
+   * @returns {object | string | null} - If 'first' is true and 'cards' is true, returns the details of the first matching card.
+   *                                     If 'first' is true and 'cards' is false, returns the ID of the first matching card.
+   *                                     If 'first' is false, returns an array of card details.
+   *                                     Returns null if no matching cards are found.
+   */
   async findCardFromField(
     field: string,
     value: string,
     pipeId: string,
-    first: Boolean = true,
+    first: boolean = true,
     cards = false,
   ): Promise<any> {
     let cardfields = '';
@@ -279,6 +341,12 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Makes a comment on a specified card.
+   * @param cardId The ID of the card to comment on.
+   * @param options Options for making the comment.
+   * @returns A promise that resolves when the comment is successfully made.
+   */
   makeComment(cardId: string, text: string): Promise<Response> {
     // The comment text is sent as a GraphQL variable so quotes, backslashes and
     // newlines in the text can never break the mutation or inject GraphQL.
@@ -288,6 +356,19 @@ export class PipefyAPI {
     );
   }
 
+  /**
+   * Updates a specific field in a Pipefy card with a given value.
+   *
+   * @param cardId - The ID of the card where the field will be updated.
+   * @param name - The ID of the field to be updated.
+   * @param value - The new value to assign to the field. Can be a string or an array.
+   * @param valueIsArray - Optional. Set to true if the value is an array. Defaults to false.
+   * @param operation - Optional. Specifies an additional operation to be applied (e.g., ADD, REMOVE).
+   * @returns A Promise resolving with the API response after attempting to update the field value.
+   *
+   * The function constructs and sends a GraphQL mutation to update the specified field.
+   * It properly formats string and array values and handles optional operations.
+   */
   updateFaseField(
     cardId: string,
     name: string,
@@ -308,18 +389,30 @@ export class PipefyAPI {
     return this.pipefyFetch(query);
   }
 
+  /**
+   * Clears a connector field in a specified card.
+   * @param cardId The ID of the card from which to clear the field.
+   * @param field The name of the field to clear.
+   * @returns A promise that resolves when the field is successfully cleared.
+   */
   clearConnectorField(cardId: string, field: string): Promise<Response> {
     return this.pipefyFetch(
       `mutation { updateCardField( input: {card_id: ${cardId} , field_id: "${field}", new_value: null} ) { clientMutationId success } }`,
     );
   }
 
+  /**
+   * Updates multiple fields in a specified card.
+   * @param cardId The ID of the card to update.
+   * @param fieldsToUpdate An object containing the fields to update, where the keys are field IDs and the values are the new values.
+   * @returns A promise that resolves when the fields are successfully updated.
+   */
   updateFaseFields(cardId: string, fieldsToUpdate: any): Promise<Response> {
     // fieldsToUpdate debe ser un objeto del tipo { field1: value1, field2: value2, ... }
     // por cada objeto se debe buscar el nombre y valor para colocar en el formato
     // {fieldId: "${name}", value: "${value}" },
-    let fieldArray: any[] = [];
-    for (let field in fieldsToUpdate) {
+    const fieldArray: any[] = [];
+    for (const field in fieldsToUpdate) {
       if (Array.isArray(fieldsToUpdate[field])) {
         if (fieldsToUpdate[field].length > 0) {
           fieldArray.push(
@@ -347,12 +440,25 @@ export class PipefyAPI {
     );
   }
 
+  /**
+   * Sets assignees for a specified card.
+   * @param cardId The ID of the card for which to set assignees.
+   * @param assignees An array of user IDs representing the assignees.
+   * @returns A promise that resolves when the assignees are successfully set.
+   */
   setAssignees(cardId: string, assignees: string[]): Promise<Response> {
     return this.pipefyFetch(
       `mutation { updateCard(input: {id: "${cardId}", assignee_ids: ["${assignees.join('", "')}"]}) { clientMutationId } }`,
     );
   }
 
+  /**
+   * Updates the labels of a card in Pipefy using a GraphQL mutation.
+   *
+   * @param cardId - The unique identifier of the card to update.
+   * @param labels - An array of label IDs to assign to the card. If `null`, the labels on the card will be cleared.
+   * @returns A Promise resolving to the result of the `pipefyFetch` call.
+   */
   setLabels(cardId: string, labels: string[] | null): Promise<Response> {
     if (labels == null) {
       return this.pipefyFetch(
@@ -365,6 +471,12 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Sets the due date for a specified card.
+   * @param cardId The ID of the card for which to set the due date.
+   * @param dueDate The new due date in ISO 8601 format (e.g., "2024-05-10T00:00:00Z").
+   * @returns A promise that resolves when the due date is successfully set.
+   */
   setDueDate(cardId: string, dueDate: string): Promise<Response> {
     return this.pipefyFetch(
       `mutation { updateCard(input: {id: "${cardId}", due_date: "${dueDate}"}) { clientMutationId } }`,
@@ -391,6 +503,14 @@ export class PipefyAPI {
     );
   }
 
+  /**
+   * Finds a record in a specified table based on a field value.
+   * @param taleId The ID of the table in which to search for the record.
+   * @param fieldId The ID of the field to search within the table.
+   * @param value The value to search for in the specified field.
+   * @param fullData Optional. If true, returns the full data of the record. Defaults to false.
+   * @returns The ID or full data of the record if found, otherwise returns null.
+   */
   async findRecordInTable(
     taleId: string,
     fieldId: string,
@@ -429,8 +549,14 @@ export class PipefyAPI {
       .replace(')', ' ');
   }
 
+  /**
+   * Creates a new record in a specified table with the provided data.
+   * @param tableId The ID of the table in which to create the record.
+   * @param data An array of objects containing the field ID and corresponding value for each field in the record.
+   * @returns The ID of the newly created record if successful, otherwise returns null.
+   */
   async createTableRecord(tableId: string, data: any[] = []): Promise<any | null> {
-    let fields_attributes: any[] = [];
+    const fields_attributes: any[] = [];
     for (let i = 0; i < data.length; i++) {
       fields_attributes.push(
         `{field_id: ${this.escapeGqlString(data[i].id)}, field_value: ${this.escapeGqlString(data[i].value)}}`,
@@ -521,13 +647,13 @@ export class PipefyAPI {
    * @param {boolean} [full=false] - If true, returns an object with all properties.
    * @returns {any} - An indexed object containing field values.
    */
-  indexFields(fields: any[], full: Boolean = false): any {
+  indexFields(fields: any[], full: boolean = false): any {
     if (!Array.isArray(fields)) {
       return {};
     }
     const indexedFields: any = {};
     for (const item of fields) {
-      const { indexName, name, value, report_value, ...rest } = item;
+      const { indexName, name, value } = item;
       const type = typeof value === 'number' ? 'number' : 'string';
       const index = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
       if (full) {
@@ -539,6 +665,13 @@ export class PipefyAPI {
     return indexedFields;
   }
 
+  /**
+   * Searches for an card in an array based on the value of an "id" property.
+   *
+   * @param array - The array of cards to search within.
+   * @param targetId - The ID of the object to find.
+   * @returns The object with the specified ID if found, or `null` if it does not exist.
+   */
   findCardsById(array: any[], targetId: string): any | null {
     for (const item of array) {
       if (item.id === targetId) {
@@ -576,6 +709,13 @@ export class PipefyAPI {
     return undefined;
   }
 
+  /**
+   * Logs an error message to a specified log table in Pipefy.
+   * @param message The error message to log.
+   * @param errorCode The error code associated with the message (default is 200).
+   * @param functionName The name of the function where the error occurred (optional).
+   * @returns A Promise that resolves when the error is logged successfully.
+   */
   async logError(message: string, errorCode = 200, functionName: string = ''): Promise<any> {
     if (this.logTable == undefined) {
       return null;
@@ -592,32 +732,51 @@ export class PipefyAPI {
     ]);
   }
 
+  /**
+   * Clears all records from a specified table in Pipefy.
+   * @param tableId The ID of the table to clear.
+   * @returns A Promise that resolves with information about the cleared table or an error message.
+   */
   async clearTable(tableId: string): Promise<any> {
     let recordCount = 0;
     const recodrs: any = await (await this.listTableRecords(tableId)).json();
     if (recodrs.data.table_records.edges != undefined) {
-      let promises: any[] = [];
+      const promises: any[] = [];
       for (let i = 0; i < recodrs.data.table_records.edges.length; i++) {
         promises.push(this.deleteTablerecord(recodrs.data.table_records.edges[i].node.id));
       }
       const result = await Promise.all(promises);
+      recordCount += result.length;
     }
     return `Deleted ${recordCount} recodrs in table ${tableId}`;
   }
 
+  /**
+   * Deletes a card with the specified ID.
+   *
+   * @param cardId - The ID of the card to be deleted.
+   * @returns A promise that resolves to the response of the delete operation.
+   */
   deleteCard(cardId: string): Promise<Response> {
     return this.pipefyFetch(
       `mutation { deleteCard(input: {id: "${cardId}"}) { clientMutationId success } }`,
     );
   }
 
+  /**
+   * Clears all cards from a specified pipe by deleting them.
+   *
+   * @param pipeId - The ID of the pipe from which to delete all cards.
+   * @returns A promise that resolves to a string indicating the number of cards deleted and the pipe ID.
+   *
+   */
   async clearPipe(pipeId: string): Promise<string> {
     let recordCount = 0;
     let finished = false;
     do {
       const allCards: any = await this.allCardsIds(pipeId);
       if (allCards != null) {
-        let promises: any[] = [];
+        const promises: any[] = [];
         for (let i = 0; i < allCards.nodes.length; i++) {
           promises.push(this.deleteCard(allCards.nodes[i].id));
         }
@@ -631,15 +790,26 @@ export class PipefyAPI {
     return `Deleted ${recordCount} cards in pipe ${pipeId}`;
   }
 
+  /**
+   * Creates an email to send from a specified card in Pipefy.
+   * @param cardId The ID of the card from which to send the email.
+   * @param pipeId The ID of the pipe associated with the card.
+   * @param from The email address of the sender.
+   * @param fromName The name of the sender.
+   * @param to The email address of the recipient.
+   * @param subject The subject of the email.
+   * @param html The HTML content of the email.
+   * @returns A Promise that resolves with the ID of the created email or null if there was an error.
+   */
   async createEmailTosend(
-    cardId: String,
+    cardId: string,
     pipeId: string,
     from: string,
     fromName: string,
     to: string,
-    subject: String,
-    html: String,
-  ): Promise<any> {
+    subject: string,
+    html: string,
+  ): Promise<string | null> {
     const createEmailResult: any = await (
       await this.pipefyFetch(
         `mutation { createInboxEmail( input: { card_id: ${cardId}, repo_id: ${pipeId}, from: "${from}", fromName: "${fromName}", to: "${to}", subject: "${subject}", html: "${html}" } ) { clientMutationId inbox_email{id} } } `,
@@ -652,7 +822,12 @@ export class PipefyAPI {
     return createEmailResult.data.createInboxEmail.inbox_email.id;
   }
 
-  async sendEmail(emailId: String): Promise<any> {
+  /**
+   * Sends an email using the specified email ID returned by the function createEmailTosend.
+   * @param emailId The ID of the email to send.
+   * @returns A Promise that resolves when the email is sent successfully or null if there was an error.
+   */
+  async sendEmail(emailId: string): Promise<any> {
     return this.pipefyFetch(
       `mutation { sendInboxEmail(input: {id: ${emailId} }) { clientMutationId } }`,
     );
@@ -841,6 +1016,15 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Creates a new card in a specified pipe in Pipefy.
+   * @param pipeId The ID of the pipe where the card will be created.
+   * @param dataArray An array containing the data to be set in the new card's fields.
+   * @param reportError Determines whether to report errors encountered during card creation (default is false).
+   * @param title Optional card title. Pipefy only honors it when the pipe uses manual
+   *   titles; if the pipe derives the title from a field, this value is ignored (no error).
+   * @returns A Promise that resolves with the created card's ID if successful, or null if there was an error.
+   */
   async createCard(
     pipeID: string,
     dataArray: any,
@@ -863,7 +1047,7 @@ export class PipefyAPI {
       }
     } else {
       // Si es objeto
-      for (let param in dataArray) {
+      for (const param in dataArray) {
         pushField(param, dataArray[param]);
       }
     }
@@ -920,11 +1104,6 @@ export class PipefyAPI {
       const pathSegments = urlObj.pathname.split('/');
       const lastSegment = pathSegments[pathSegments.length - 1];
       const decodedFileName = decodeURIComponent(lastSegment);
-      const fileNameParts = decodedFileName.split('.');
-      // Si necesitas la extensión del archivo
-      //const fileName = fileNameParts[0]; // Nombre del archivo sin extensión
-      //const fileExtension = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : ''; // Extensión del archivo
-
       return decodedFileName;
     } catch (error) {
       console.error('Error parsing the URL:', error);
@@ -932,8 +1111,13 @@ export class PipefyAPI {
     }
   }
 
-  getPreSignedURL(fileName: String): Promise<Response> {
-    let query = `mutation {
+  /**
+   * Generates a pre-signed URL for uploading a file to Pipefy.
+   * @param fileName The name of the file for which to generate the pre-signed URL.
+   * @returns A Promise that resolves with the pre-signed URL if successful, or null if there was an error.
+   */
+  getPreSignedURL(fileName: string): Promise<Response> {
+    const query = `mutation {
       createPresignedUrl(input: { organizationId: ${this.organizationId}, fileName: "${fileName}" }){
         clientMutationId
         url
@@ -956,6 +1140,11 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Uploads a file from a specified URL to Pipefy.
+   * @param sourceUrl The URL of the file to upload.
+   * @returns A Promise that resolves with the path of the uploaded file in Pipefy if successful, or null if there was an error.
+   */
   async uploadFileFromUrl(sourceUrl: string): Promise<string | null> {
     try {
       // Search for the name of the file whithin the source URL
@@ -1008,6 +1197,12 @@ export class PipefyAPI {
     }
   }
 
+  /**
+   * Uploads a file from a buffer to Pipefy.
+   * @param fileName The name of the file to upload.
+   * @param fileData The buffer containing the file data.
+   * @returns A Promise that resolves with the path of the uploaded file in Pipefy if successful, or null if there was an error.
+   */
   async uploadFileFromBuffer(fileName: string, fileData: any): Promise<string | null> {
     try {
       // Look for the upload URL
@@ -1094,7 +1289,10 @@ export class PipefyAPI {
       try {
         const errText = await response.clone().text();
         console.error(`[PipefyAPI] Response body: ${errText}`);
-      } catch (e) {}
+      } catch {
+        // Best effort: the status line above is already logged, and the body may
+        // be unreadable (already consumed, or not text). Nothing else to do.
+      }
     }
 
     return response;
