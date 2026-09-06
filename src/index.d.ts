@@ -452,10 +452,19 @@ export declare class PipefyAPI {
    * Makes a fetch request to the Pipefy API with the given GraphQL query.
    *
    * @param query - The GraphQL query string to be sent in the request body.
+   * @param variables - Optional GraphQL variables sent alongside the query. Passing
+   *   them lets callers send user input as data instead of interpolating it into the
+   *   query, avoiding GraphQL injection and breakage from quotes/newlines. For
+   *   backward compatibility, if a string is passed it is treated as the HTTP method
+   *   (the previous `pipefyFetch(query, method)` signature).
    * @param method - Optional. The HTTP method to use for the request (defaults to `'POST'`).
    * @returns A promise that resolves to the `Response` object returned by the fetch call.
    */
-  pipefyFetch(query: string, method?: string): Promise<Response>;
+  pipefyFetch(
+    query: string,
+    variables?: Record<string, any> | string | null,
+    method?: string,
+  ): Promise<Response>;
 
   /**
    * Retrieves the current tracking service account token object if initialized as a service account.
