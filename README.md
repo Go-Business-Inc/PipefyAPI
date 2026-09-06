@@ -94,6 +94,8 @@ _(Note: Internally, the library handles the detection and mapping of these param
   - Assigns or clears labels on a card.
 - **setDueDate(cardId: string, dueDate: string): Promise<Response>**
   - Sets the due date for a card.
+- **setCardTitle(cardId: string, title: string): Promise<Response>**
+  - Renames a card (via `updateCard`). Overrides the title even on pipes whose title comes from a field.
 - **findRecordInTable(taleId: string, fieldId: string, value: string, fullData?: boolean): Promise<any | null>**
   - Searches for a record in a table by the value of a field, with option to get full data.
 - **createTableRecord(tableId: string, data?: any[]): Promise<any | null>**
@@ -124,8 +126,8 @@ _(Note: Internally, the library handles the detection and mapping of these param
   - Creates an email ready to send from a card.
 - **sendEmail(emailId: string): Promise<any>**
   - Sends a previously created email.
-- **createCard(pipeID: string, dataArray: any, reportError?: boolean): Promise<any>**
-  - Creates a new card in a pipe.
+- **createCard(pipeID: string, dataArray: any, reportError?: boolean, title?: string): Promise<any>**
+  - Creates a new card in a pipe. Optional `title` is honored only on pipes with manual titles (ignored, without error, when the pipe derives its title from a field — use `setCardTitle` to force it afterwards).
 - **getPreSignedURL(fileName: string): Promise<Response>**
   - Generates a pre-signed URL for uploading files to Pipefy.
 - **uploadFileFromUrl(sourceUrl: string): Promise<string | null>**

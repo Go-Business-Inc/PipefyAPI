@@ -371,6 +371,26 @@ export class PipefyAPI {
     );
   }
 
+  /**
+   * Sets (renames) the title of a card via `updateCard`.
+   *
+   * Note: there is no `setCardTitle` mutation in Pipefy — the title is changed
+   * through `updateCard`. The new title is sent as a GraphQL variable so quotes,
+   * backslashes and newlines can never break the mutation or inject GraphQL.
+   * Unlike `createCard`, this overrides the title even on pipes whose title is
+   * derived from a field.
+   *
+   * @param cardId - The ID of the card to rename.
+   * @param title - The new title.
+   * @returns A promise that resolves to the response of the update operation.
+   */
+  setCardTitle(cardId: string, title: string): Promise<Response> {
+    return this.pipefyFetch(
+      `mutation($title: String) { updateCard(input: {id: ${this.escapeGqlString(cardId)}, title: $title}) { clientMutationId card { id title } } }`,
+      { title: String(title ?? '') },
+    );
+  }
+
   async findRecordInTable(
     taleId: string,
     fieldId: string,
@@ -821,7 +841,12 @@ export class PipefyAPI {
     }
   }
 
-  async createCard(pipeID: string, dataArray: any, reportError = false): Promise<any> {
+  async createCard(
+    pipeID: string,
+    dataArray: any,
+    reportError = false,
+    title?: string,
+  ): Promise<any> {
     // Build the fields_attributes as data and send it through GraphQL variables
     // instead of interpolating it into the query string. This prevents GraphQL
     // injection and the broken mutations caused by quotes, backslashes or
@@ -851,7 +876,16 @@ export class PipefyAPI {
         }
       }
     }`;
-    const variables = { input: { pipe_id: pipeID, fields_attributes: fieldsAttributes } };
+    // Note: Pipefy only honors `title` when the pipe uses manual titles. If the
+    // pipe derives the card title from a field, this value is ignored (no error).
+    const input: { pipe_id: string; fields_attributes: any[]; title?: string } = {
+      pipe_id: pipeID,
+      fields_attributes: fieldsAttributes,
+    };
+    if (title != null) {
+      input.title = title;
+    }
+    const variables = { input };
 
     // send query
     const resultPipefy: any = await (await this.pipefyFetch(query, variables)).json();

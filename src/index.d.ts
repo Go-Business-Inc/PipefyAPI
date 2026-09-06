@@ -224,6 +224,20 @@ export declare class PipefyAPI {
   setDueDate(cardId: string, dueDate: string): Promise<Response>;
 
   /**
+   * Sets (renames) the title of a card via `updateCard`.
+   *
+   * Note: Pipefy has no `setCardTitle` mutation — the title is changed through
+   * `updateCard`. The new title is sent as a GraphQL variable, so quotes,
+   * backslashes and newlines can never break the mutation. Unlike `createCard`,
+   * this overrides the title even on pipes whose title is derived from a field.
+   *
+   * @param cardId The ID of the card to rename.
+   * @param title The new title.
+   * @returns A promise that resolves to the response of the update operation.
+   */
+  setCardTitle(cardId: string, title: string): Promise<Response>;
+
+  /**
    * Finds a record in a specified table based on a field value.
    * @param taleId The ID of the table in which to search for the record.
    * @param fieldId The ID of the field to search within the table.
@@ -362,9 +376,11 @@ export declare class PipefyAPI {
    * @param pipeId The ID of the pipe where the card will be created.
    * @param dataArray An array containing the data to be set in the new card's fields.
    * @param reportError Determines whether to report errors encountered during card creation (default is false).
+   * @param title Optional card title. Pipefy only honors it when the pipe uses manual
+   *   titles; if the pipe derives the title from a field, this value is ignored (no error).
    * @returns A Promise that resolves with the created card's ID if successful, or null if there was an error.
    */
-  createCard(pipeId: string, dataArray: any, reportError?: boolean): Promise<any>;
+  createCard(pipeId: string, dataArray: any, reportError?: boolean, title?: string): Promise<any>;
 
   /**
    * Generates a pre-signed URL for uploading a file to Pipefy.
