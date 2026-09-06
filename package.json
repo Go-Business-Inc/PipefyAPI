@@ -1,6 +1,6 @@
 {
   "name": "pipefy-api",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "This library provides a convenient way to interact with the Pipefy API, allowing developers to easily integrate Pipefy functionality into their applications. It includes functions for managing cards, pipes, comments, and more.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && cp src/index.d.ts dist/index.d.ts",
+    "build": "tsc && tsc -p tsconfig.types.json",
     "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'"
   },
